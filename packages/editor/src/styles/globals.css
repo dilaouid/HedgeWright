@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --aa-blue: #192740;
+  --aa-blue-light: #2c3e59;
+  --aa-red: #a42029;
+  --aa-gold: #d4af37;
+  --aa-gray: #2f3738;
+  --aa-text: #e8e8e8;
+  --prosecutor-color: #722f37;
+  --defense-color: #1f3163;
+  --court-color: #8b5a2b;
+  --evidence-color: #0f4c81;
+  --dialog-bg: rgba(25, 39, 64, 0.95);
+  --dialog-border: #d4af37;
+  --pixel-border: 2px;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-aa-text font-ace antialiased;
+    image-rendering: pixelated;
+    background-image: url('/assets/bg-pattern.png');
+    background-repeat: repeat;
+  }
+
+  /* Style pixel NDS */
+  * {
+    image-rendering: pixelated;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-ace font-bold;
+    letter-spacing: 0.5px;
+  }
+
+  :focus-visible {
+    @apply outline-aa-gold outline-offset-2 outline-2;
+  }
+}
+
+@layer components {
+  /* Boutons style Ace Attorney */
+  .aa-button {
+    @apply font-ace bg-aa-blue text-aa-text border-2 border-aa-gold px-4 py-2 rounded-aa 
+           shadow-md transition-all duration-150 hover:bg-aa-blue-light active:translate-y-0.5;
+  }
+
+  .aa-button-red {
+    @apply font-ace bg-aa-red text-aa-text border-2 border-aa-gold px-4 py-2 rounded-aa 
+           shadow-md transition-all duration-150 hover:brightness-110 active:translate-y-0.5;
+  }
+
+  /* Panneaux de style ace attorney */
+  .aa-panel {
+    @apply bg-aa-gray border-2 border-aa-gold rounded-aa p-4 shadow-md;
+  }
+
+  /* Style d'évidence */
+  .evidence-item {
+    @apply bg-black/30 border-2 border-aa-gold p-2 rounded-aa overflow-hidden cursor-pointer 
+           transition-transform duration-150 hover:scale-105 active:scale-100;
+  }
+
+  /* Style de dialogue */
+  .dialogue-box {
+    @apply fixed bottom-0 left-0 w-full p-4 bg-dialog-bg border-t-2 border-dialog-border shadow-lg;
+  }
+
+  /* Badges de type NDS */
+  .aa-badge {
+    @apply px-2 py-0.5 text-xs font-bold rounded-aa;
+  }
+
+  /* Champs de saisie pixelisés */
+  .aa-input {
+    @apply font-ace bg-black/20 border-2 border-aa-gold rounded-aa px-3 py-2 text-aa-text;
+  }
+
+  /* Style pixelisé scrollbar */
+  .pixelated-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .pixelated-scrollbar::-webkit-scrollbar-track {
+    @apply bg-black/20;
+  }
+
+  .pixelated-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-aa-gold border-2 border-aa-gray;
+  }
+}
+
+@layer utilities {
+  /* Bordures pixelisées */
+  .pixel-border {
+    box-shadow: 0 0 0 var(--pixel-border) var(--aa-gold);
+  }
+
+  /* Texte style NDS */
+  .nds-text {
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  }
+
+  /* Rotation de sprite */
+  .sprite-flip {
+    transform: scaleX(-1);
+  }
+
+  /* Effet de rembobinage */
+  .rewind-effect {
+    animation: rewind 0.3s steps(3) infinite;
+  }
+}
+
+/* Styles de dialogue spécifiques à Ace Attorney */
+.objection-text {
+  @apply font-ace font-bold text-aa-red uppercase tracking-wide;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.hold-it-text {
+  @apply font-ace font-bold text-aa-gold uppercase tracking-wide;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.take-that-text {
+  @apply font-ace font-bold text-defense-color uppercase tracking-wide;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}

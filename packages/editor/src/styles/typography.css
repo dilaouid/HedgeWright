@@ -1,0 +1,76 @@
+@import './globals.css';
+
+/* Typographie Ace Attorney */
+.aa-heading-1 {
+  @apply font-ace text-4xl font-bold text-aa-gold mb-6 tracking-wide;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.aa-heading-2 {
+  @apply font-ace text-3xl font-bold text-aa-gold mb-4 tracking-wide;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.aa-heading-3 {
+  @apply font-ace text-2xl font-bold text-aa-gold mb-3 tracking-wide;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.aa-heading-4 {
+  @apply font-ace text-xl font-bold text-aa-gold mb-2;
+}
+
+.aa-text-large {
+  @apply font-ace text-lg text-aa-text leading-relaxed;
+}
+
+.aa-text-normal {
+  @apply font-ace text-base text-aa-text leading-relaxed;
+}
+
+.aa-text-small {
+  @apply font-ace text-sm text-aa-text leading-normal;
+}
+
+.aa-caption {
+  @apply font-ace text-xs text-aa-text opacity-80;
+}
+
+/* Dialogues */
+.aa-dialogue {
+  @apply font-ace text-xl text-white leading-relaxed;
+}
+
+.aa-character-name {
+  @apply font-ace text-lg font-bold text-aa-gold;
+}
+
+/* Emphases */
+.aa-emphasis {
+  @apply font-ace font-bold text-aa-red;
+}
+
+.aa-important {
+  @apply font-ace text-aa-gold underline;
+}
+
+/* Animation texte */
+.aa-typing {
+  overflow: hidden;
+  white-space: nowrap;
+  border-right: 2px solid var(--aa-gold);
+  animation: textReveal 3s steps(50, end) forwards;
+}
+
+/* Psyche-Locks */
+.aa-psyche-lock-text {
+  @apply font-ace font-bold text-red-500 tracking-wide;
+  text-shadow: 0 0 8px rgba(255, 100, 100, 0.6);
+}
+
+/* Styles pixelisés */
+.aa-pixel-text {
+  font-smooth: never;
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+}

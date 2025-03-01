@@ -1,18 +1,31 @@
 {
   "compilerOptions": {
     "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "jsx": "react",
-    "moduleResolution": "node",
-    "strict": true,
-    "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["packages/editor/src/*"],
       "@common/*": ["packages/common/src/*"],
-      "@editor/*": ["packages/editor/src/*"]
+      "@domain/*": ["packages/editor/src/domain/*"],
+      "@app/*": ["packages/editor/src/application/*"],
+      "@infra/*": ["packages/editor/src/infrastructure/*"],
+      "@ui/*": ["packages/editor/src/presentation/*"],
+      "@utils/*": ["packages/editor/src/utils/*"]
     }
   },
-  "include": ["packages/**/*"]
+  "include": ["packages/*/src/**/*"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,0 +1,110 @@
+@import './globals.css';
+
+:root {
+  /* Couleurs principales */
+  --aa-blue: #192740;
+  --aa-blue-light: #2c3e59;
+  --aa-blue-dark: #0f1829;
+  --aa-red: #a42029;
+  --aa-red-light: #c13039;
+  --aa-red-dark: #8a1a22;
+  --aa-gold: #d4af37;
+  --aa-gold-light: #e6c34c;
+  --aa-gold-dark: #b3932d;
+  --aa-gray: #2f3738;
+  --aa-gray-light: #4a5657;
+  --aa-gray-dark: #1e2425;
+  --aa-text: #e8e8e8;
+
+  /* Couleurs fonctionnelles */
+  --prosecutor-color: #722f37;
+  --defense-color: #1f3163;
+  --court-color: #8b5a2b;
+  --evidence-color: #0f4c81;
+  --psyche-lock-color: #8b0000;
+
+  /* Interface */
+  --background: #0f172a;
+  --background-light: #1e293b;
+  --background-dark: #0a0f1b;
+  --border: #334155;
+  --border-light: #475569;
+  --dialog-bg: rgba(25, 39, 64, 0.95);
+  --dialog-border: #d4af37;
+
+  /* Feedback */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+
+  /* Spécifiques */
+  --health-full: #10b981;
+  --health-mid: #f59e0b;
+  --health-low: #ef4444;
+  --autosave-indicator: #3b82f6;
+  --validation-error: #ef4444;
+  --validation-warning: #f59e0b;
+  --validation-success: #10b981;
+}
+
+/* Classes utilitaires de couleurs */
+.bg-psyche-lock {
+  background-color: var(--psyche-lock-color);
+}
+
+.text-psyche-lock {
+  color: var(--psyche-lock-color);
+}
+
+.border-psyche-lock {
+  border-color: var(--psyche-lock-color);
+}
+
+.bg-health-full {
+  background-color: var(--health-full);
+}
+
+.bg-health-mid {
+  background-color: var(--health-mid);
+}
+
+.bg-health-low {
+  background-color: var(--health-low);
+}
+
+.bg-validation-error {
+  background-color: var(--validation-error);
+}
+
+.border-validation-error {
+  border-color: var(--validation-error);
+}
+
+.text-validation-error {
+  color: var(--validation-error);
+}
+
+.bg-validation-warning {
+  background-color: var(--validation-warning);
+}
+
+.border-validation-warning {
+  border-color: var(--validation-warning);
+}
+
+.text-validation-warning {
+  color: var(--validation-warning);
+}
+
+.bg-validation-success {
+  background-color: var(--validation-success);
+}
+
+.border-validation-success {
+  border-color: var(--validation-success);
+}
+
+.text-validation-success {
+  color: var(--validation-success);
+}

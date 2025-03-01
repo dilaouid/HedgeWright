@@ -1,0 +1,17 @@
+{
+  "name": "hedgewright-common",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.13.8",
+    "typescript": "5.7.3",
+    "zod": "^3.24.2"
+  }
+}
