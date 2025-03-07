@@ -1,140 +1,306 @@
-@import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --aa-blue: #192740;
-  --aa-blue-light: #2c3e59;
-  --aa-red: #a42029;
-  --aa-gold: #d4af37;
-  --aa-gray: #2f3738;
-  --aa-text: #e8e8e8;
-  --prosecutor-color: #722f37;
-  --defense-color: #1f3163;
-  --court-color: #8b5a2b;
-  --evidence-color: #0f4c81;
-  --dialog-bg: rgba(25, 39, 64, 0.95);
-  --dialog-border: #d4af37;
-  --pixel-border: 2px;
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* Ace Attorney Font */
+@font-face {
+  font-family: 'Ace Attorney';
+  src: url('/assets/fonts/AceAttorney.woff2') format('woff2'),
+       url('/assets/fonts/AceAttorney.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
 
+:root {
+  /* Base Colors */
+  --color-blue-primary: #1964ff;
+  --color-red-primary: #ff1919;
+  --color-court-bg: #f0e6d8;
+  --color-text-primary: #2c2c2c;
+  --color-text-secondary: #5c5c5c;
+  
+  /* Scanline Effect Variables */
+  --scanline-size: 1px;
+  --scanline-intensity: 0.1;
+  
+  /* Dialogue Box Variables */
+  --dialogue-speed: 30ms;
+  
+  /* Animation Timings */
+  --objection-duration: 1s;
+  --transition-speed: 0.2s;
+}
+
+/* Base Element Styles */
 @layer base {
+  html {
+    @apply antialiased;
+  }
+  
   body {
-    @apply bg-background text-aa-text font-ace antialiased;
+    @apply font-dialogue bg-aa-bg-court dark:bg-gray-900 text-gray-900 dark:text-gray-100;
     image-rendering: pixelated;
-    background-image: url('/assets/bg-pattern.png');
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-ace;
+  }
+  
+  button {
+    @apply transition-all duration-200;
+  }
+}
+
+/* Component Styles */
+@layer components {
+  /* Buttons */
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium relative 
+           shadow-aa-button active:shadow-aa-button-pressed 
+           active:translate-y-[2px] transition-all cursor-pointer
+           focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply bg-aa-blue-500 text-white 
+           hover:bg-aa-blue-600 focus:ring-aa-blue-500;
+  }
+  
+  .btn-red {
+    @apply bg-aa-red-500 text-white 
+           hover:bg-aa-red-600 focus:ring-aa-red-500;
+  }
+  
+  .btn-green {
+    @apply bg-aa-green-500 text-white 
+           hover:bg-aa-green-600 focus:ring-aa-green-500;
+  }
+  
+  .btn-yellow {
+    @apply bg-aa-yellow-500 text-black 
+           hover:bg-aa-yellow-600 focus:ring-aa-yellow-500;
+  }
+  
+  /* Buttons with Scanlines */
+  .btn-scanlines {
+    @apply relative overflow-hidden;
+  }
+  
+  .btn-scanlines::after {
+    content: "";
+    @apply absolute inset-0 pointer-events-none bg-scanlines bg-scanlines-sm opacity-30;
+  }
+  
+  /* Dialogue Box */
+  .dialogue-box {
+    @apply p-4 rounded-lg shadow-aa-dialogue 
+           relative overflow-hidden border-2 border-gray-600
+           flex flex-col;
+  }
+  
+  .dialogue-box-wright {
+    @apply bg-aa-dialogue-wright text-white;
+  }
+  
+  .dialogue-box-edgeworth {
+    @apply bg-aa-dialogue-edgeworth text-white;
+  }
+  
+  .dialogue-box-witness {
+    @apply bg-aa-dialogue-witness text-white;
+  }
+  
+  .dialogue-box-judge {
+    @apply bg-aa-dialogue-judge text-white;
+  }
+  
+  /* Add scanlines to dialogue boxes */
+  .dialogue-box::after {
+    content: "";
+    @apply absolute inset-0 pointer-events-none bg-scanlines bg-scanlines-sm opacity-20;
+  }
+  
+  /* Court Record / Evidence */
+  .evidence-card {
+    @apply bg-aa-evidence p-3 rounded-md shadow-aa-evidence 
+           border-2 border-amber-700 cursor-pointer
+           hover:scale-105 transition-transform;
+  }
+  
+  /* Objection! Effects */
+  .objection-bubble {
+    @apply fixed inset-0 flex items-center justify-center z-50 pointer-events-none;
+    animation: objection var(--objection-duration) forwards cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  }
+  
+  /* Character Portrait Area */
+  .character-portrait {
+    @apply relative overflow-hidden;
+  }
+  
+  /* Noise overlay */
+  .noise-overlay {
+    @apply absolute inset-0 pointer-events-none opacity-5 z-10;
+    background-image: url('/assets/images/ui/noise.png');
     background-repeat: repeat;
   }
+  
+  /* Thinking Animation */
+  .thinking-dots::after {
+    content: "...";
+    animation: thinkingDots 1.5s infinite;
+  }
+  
+  /* Evidence Pointer */
+  .evidence-pointer {
+    @apply w-10 h-10 absolute z-10 transition-all duration-300;
+    background: url('/assets/images/ui/pointer.png') no-repeat;
+    background-size: contain;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
+  }
+  
+  /* Testimony Elements */
+  .testimony-statement {
+    @apply bg-aa-yellow-100 border-l-4 border-aa-yellow-500 
+           p-3 my-2 rounded-r-md shadow-md relative;
+  }
+  
+  .testimony-statement.contradicted {
+    @apply border-aa-red-500 bg-aa-red-100;
+  }
+  
+  /* Cross Examination Styles */
+  .cross-exam-press {
+    @apply absolute right-2 top-2 bg-aa-blue-500 text-white 
+           px-2 py-1 rounded text-xs font-medium;
+  }
+  
+  .cross-exam-present {
+    @apply absolute right-2 bottom-2 bg-aa-red-500 text-white 
+           px-2 py-1 rounded text-xs font-medium;
+  }
+}
 
-  /* Style pixel NDS */
-  * {
+/* Utility Classes */
+@layer utilities {
+  /* Pixel Perfect Effects */
+  .pixel-perfect {
     image-rendering: pixelated;
   }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-ace font-bold;
-    letter-spacing: 0.5px;
+  
+  /* Custom Scanlines */
+  .scanlines {
+    @apply relative overflow-hidden;
   }
-
-  :focus-visible {
-    @apply outline-aa-gold outline-offset-2 outline-2;
+  
+  .scanlines::after {
+    content: "";
+    @apply absolute inset-0 pointer-events-none bg-scanlines bg-scanlines-sm opacity-30;
+    z-index: 2;
   }
-}
-
-@layer components {
-  /* Boutons style Ace Attorney */
-  .aa-button {
-    @apply font-ace bg-aa-blue text-aa-text border-2 border-aa-gold px-4 py-2 rounded-aa 
-           shadow-md transition-all duration-150 hover:bg-aa-blue-light active:translate-y-0.5;
+  
+  .scanlines-lg::after {
+    @apply bg-scanlines-lg;
   }
-
-  .aa-button-red {
-    @apply font-ace bg-aa-red text-aa-text border-2 border-aa-gold px-4 py-2 rounded-aa 
-           shadow-md transition-all duration-150 hover:brightness-110 active:translate-y-0.5;
-  }
-
-  /* Panneaux de style ace attorney */
-  .aa-panel {
-    @apply bg-aa-gray border-2 border-aa-gold rounded-aa p-4 shadow-md;
-  }
-
-  /* Style d'évidence */
-  .evidence-item {
-    @apply bg-black/30 border-2 border-aa-gold p-2 rounded-aa overflow-hidden cursor-pointer 
-           transition-transform duration-150 hover:scale-105 active:scale-100;
-  }
-
-  /* Style de dialogue */
-  .dialogue-box {
-    @apply fixed bottom-0 left-0 w-full p-4 bg-dialog-bg border-t-2 border-dialog-border shadow-lg;
-  }
-
-  /* Badges de type NDS */
-  .aa-badge {
-    @apply px-2 py-0.5 text-xs font-bold rounded-aa;
-  }
-
-  /* Champs de saisie pixelisés */
-  .aa-input {
-    @apply font-ace bg-black/20 border-2 border-aa-gold rounded-aa px-3 py-2 text-aa-text;
-  }
-
-  /* Style pixelisé scrollbar */
-  .pixelated-scrollbar::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  .pixelated-scrollbar::-webkit-scrollbar-track {
-    @apply bg-black/20;
-  }
-
-  .pixelated-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-aa-gold border-2 border-aa-gray;
-  }
-}
-
-@layer utilities {
-  /* Bordures pixelisées */
+  
+  /* Pixelated borders */
   .pixel-border {
-    box-shadow: 0 0 0 var(--pixel-border) var(--aa-gold);
+    box-shadow: 
+      0 -2px 0 1px rgba(0, 0, 0, 0.6),
+      0 2px 0 1px rgba(255, 255, 255, 0.2),
+      -2px 0 0 1px rgba(0, 0, 0, 0.6),
+      2px 0 0 1px rgba(255, 255, 255, 0.2);
   }
-
-  /* Texte style NDS */
-  .nds-text {
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  
+  /* Text effects */
+  .text-outline {
+    text-shadow:
+      -1px -1px 0 #000,
+       1px -1px 0 #000,
+      -1px  1px 0 #000,
+       1px  1px 0 #000;
   }
-
-  /* Rotation de sprite */
-  .sprite-flip {
-    transform: scaleX(-1);
+  
+  .text-shake {
+    animation: shake 0.5s linear;
   }
-
-  /* Effet de rembobinage */
-  .rewind-effect {
-    animation: rewind 0.3s steps(3) infinite;
+  
+  /* Typewriter effect for text */
+  .typewriter {
+    overflow: hidden;
+    border-right: .15em solid;
+    white-space: nowrap;
+    margin: 0 auto;
+    letter-spacing: .1em;
+    animation: 
+      typing 3.5s steps(40, end),
+      blink-caret .75s step-end infinite;
   }
 }
 
-/* Styles de dialogue spécifiques à Ace Attorney */
-.objection-text {
-  @apply font-ace font-bold text-aa-red uppercase tracking-wide;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+/* Keyframe Animations */
+@keyframes thinkingDots {
+  0%, 20% { content: "."; }
+  40%, 60% { content: ".."; }
+  80%, 100% { content: "..."; }
 }
 
-.hold-it-text {
-  @apply font-ace font-bold text-aa-gold uppercase tracking-wide;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
 }
 
-.take-that-text {
-  @apply font-ace font-bold text-defense-color uppercase tracking-wide;
-  text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: currentColor }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Dark Theme Overrides */
+.dark .btn {
+  @apply shadow-[0_4px_0_0_rgba(255,255,255,0.1)];
+}
+
+.dark .dialogue-box {
+  @apply border-gray-700;
+}
+
+.dark .evidence-card {
+  @apply border-amber-900;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #666;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #888;
 }

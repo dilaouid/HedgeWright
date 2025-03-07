@@ -1,76 +1,258 @@
-@import './globals.css';
+/* 
+ * typography.css
+ * Typography styles for Ace Attorney themed UI
+ */
 
-/* Typographie Ace Attorney */
-.aa-heading-1 {
-  @apply font-ace text-4xl font-bold text-aa-gold mb-6 tracking-wide;
-  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+/* Base Typography */
+body {
+  font-family: 'M PLUS Rounded 1c', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  letter-spacing: 0.015em;
 }
 
-.aa-heading-2 {
-  @apply font-ace text-3xl font-bold text-aa-gold mb-4 tracking-wide;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Ace Attorney', 'M PLUS Rounded 1c', sans-serif;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.5em;
 }
 
-.aa-heading-3 {
-  @apply font-ace text-2xl font-bold text-aa-gold mb-3 tracking-wide;
-  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+h1 {
+  font-size: 2.5rem;
+  letter-spacing: 0.02em;
 }
 
-.aa-heading-4 {
-  @apply font-ace text-xl font-bold text-aa-gold mb-2;
+h2 {
+  font-size: 2rem;
+  letter-spacing: 0.01em;
 }
 
-.aa-text-large {
-  @apply font-ace text-lg text-aa-text leading-relaxed;
+h3 {
+  font-size: 1.75rem;
 }
 
-.aa-text-normal {
-  @apply font-ace text-base text-aa-text leading-relaxed;
+h4 {
+  font-size: 1.5rem;
 }
 
-.aa-text-small {
-  @apply font-ace text-sm text-aa-text leading-normal;
+h5 {
+  font-size: 1.25rem;
 }
 
-.aa-caption {
-  @apply font-ace text-xs text-aa-text opacity-80;
+h6 {
+  font-size: 1rem;
 }
 
-/* Dialogues */
-.aa-dialogue {
-  @apply font-ace text-xl text-white leading-relaxed;
+/* Pixelated Font */
+.font-pixel {
+  font-family: 'Press Start 2P', monospace;
+  line-height: 1.6;
+  letter-spacing: 0.05em;
 }
 
-.aa-character-name {
-  @apply font-ace text-lg font-bold text-aa-gold;
+/* Dialog Text */
+.dialogue-text {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
 }
 
-/* Emphases */
-.aa-emphasis {
-  @apply font-ace font-bold text-aa-red;
+.dialogue-name {
+  font-family: 'Ace Attorney', 'M PLUS Rounded 1c', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.25em;
 }
 
-.aa-important {
-  @apply font-ace text-aa-gold underline;
+/* Court Record Text */
+.evidence-name {
+  font-family: 'Ace Attorney', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
 }
 
-/* Animation texte */
-.aa-typing {
-  overflow: hidden;
-  white-space: nowrap;
-  border-right: 2px solid var(--aa-gold);
-  animation: textReveal 3s steps(50, end) forwards;
+.evidence-description {
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
-/* Psyche-Locks */
-.aa-psyche-lock-text {
-  @apply font-ace font-bold text-red-500 tracking-wide;
-  text-shadow: 0 0 8px rgba(255, 100, 100, 0.6);
+/* Testimony Text */
+.testimony-text {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-style: italic;
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
-/* Styles pixelisés */
-.aa-pixel-text {
-  font-smooth: never;
-  -webkit-font-smoothing: none;
-  image-rendering: pixelated;
+.testimony-number {
+  font-family: 'Ace Attorney', sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+
+/* Special Text Effects */
+.text-emphasized {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.text-objection {
+  font-family: 'Ace Attorney', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ff1919;
+  text-shadow: 
+    -2px -2px 0 #fff,
+     2px -2px 0 #fff,
+    -2px  2px 0 #fff,
+     2px  2px 0 #fff;
+}
+
+.text-holdit {
+  font-family: 'Ace Attorney', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1964ff;
+  text-shadow: 
+    -2px -2px 0 #fff,
+     2px -2px 0 #fff,
+    -2px  2px 0 #fff,
+     2px  2px 0 #fff;
+}
+
+.text-takethat {
+  font-family: 'Ace Attorney', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #19ff19;
+  text-shadow: 
+    -2px -2px 0 #fff,
+     2px -2px 0 #fff,
+    -2px  2px 0 #fff,
+     2px  2px 0 #fff;
+}
+
+/* Game Menu Text */
+.menu-text {
+  font-family: 'Ace Attorney', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.menu-option {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+
+.menu-option.selected {
+  font-weight: 700;
+  color: var(--primary);
+  position: relative;
+}
+
+.menu-option.selected::before {
+  content: '→';
+  position: absolute;
+  left: -1.2rem;
+}
+
+/* Editor Text Styles */
+.editor-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  margin-bottom: 0.25rem;
+}
+
+.editor-value {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+  font-size: 1rem;
+}
+
+.code-text {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Status Messages */
+.status-success {
+  font-weight: 500;
+  color: var(--success);
+}
+
+.status-error {
+  font-weight: 500;
+  color: var(--destructive);
+}
+
+.status-warning {
+  font-weight: 500;
+  color: var(--warning);
+}
+
+/* Timeline Text */
+.timeline-node-title {
+  font-family: 'Ace Attorney', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.timeline-node-subtitle {
+  font-size: 0.8rem;
+  color: var(--muted-foreground);
+}
+
+/* Help Text & Tooltips */
+.help-text {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+}
+
+.tooltip-text {
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+  }
+  
+  .dialogue-text {
+    font-size: 1rem;
+  }
+  
+  .text-objection,
+  .text-holdit,
+  .text-takethat {
+    font-size: 2rem;
+  }
 }

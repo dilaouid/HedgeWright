@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@font-face {
+  font-family: 'Ace Attorney';
+  src: url('/fonts/AceAttorney.woff2') format('woff2');
+}
+
+:root {
+  /* Couleurs Ace Attorney */
+  --aa-blue: #1f3453;
+  --aa-red: #a4243b;
+  --aa-gold: #c8a050;
+  --aa-brown: #8b4513;
+  --aa-cream: #f5e6d3;
+  
+  /* Palette sémantique */
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  
+  --card: var(--aa-blue);
+  --card-foreground: var(--aa-cream);
+  
+  --popover: var(--aa-blue);
+  --popover-foreground: var(--aa-cream);
+  
+  --primary: var(--aa-red);
+  --primary-foreground: var(--aa-cream);
+  
+  --secondary: var(--aa-gold);
+  --secondary-foreground: var(--aa-blue);
+  
+  --muted: var(--aa-brown);
+  --muted-foreground: var(--aa-cream);
+  
+  --accent: var(--aa-gold);
+  --accent-foreground: var(--aa-blue);
+  
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: var(--aa-gold);
+  --input: var(--aa-blue);
+  --ring: var(--aa-gold);
+  
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: var(--aa-blue);
+  --foreground: var(--aa-cream);
+}
+
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Ace Attorney', sans-serif;
+} 

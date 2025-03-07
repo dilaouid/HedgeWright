@@ -1,0 +1,3 @@
+interface WelcomeSectionProps {
+    onCreateProject: () => void;
+}

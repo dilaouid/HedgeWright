@@ -17,15 +17,12 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["packages/editor/src/*"],
       "@common/*": ["packages/common/src/*"],
-      "@domain/*": ["packages/editor/src/domain/*"],
-      "@app/*": ["packages/editor/src/application/*"],
-      "@infra/*": ["packages/editor/src/infrastructure/*"],
-      "@ui/*": ["packages/editor/src/presentation/*"],
-      "@utils/*": ["packages/editor/src/utils/*"]
+      "@editor/*": ["packages/editor/src/*"]
     }
   },
-  "include": ["packages/*/src/**/*"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [
+    { "path": "./packages/common" },
+    { "path": "./packages/editor" }
+  ]
 }
