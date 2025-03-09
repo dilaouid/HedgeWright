@@ -2,7 +2,7 @@
  * Message model
  * Represents a single message in a dialogue
  */
-import { MessagePosition } from '@hedgewright/common';
+import { MessagePosition, VoiceType } from '@hedgewright/common';
 import { v4 as uuidv4 } from 'uuid';
 
 export class Message {
@@ -16,6 +16,7 @@ export class Message {
     readonly speakerName: string | null;
     readonly showSpeakerName: boolean;
     readonly typewritingSpeed: number;
+    readonly typewritingSoundType: VoiceType;
     readonly messagePosition: MessagePosition;
     readonly dialogueId: string | null;
     readonly nextMessageId: string | null;
@@ -33,6 +34,7 @@ export class Message {
         speakerName: string | null = null,
         showSpeakerName: boolean = true,
         typewritingSpeed: number = 30,
+        typewritingSoundType: VoiceType = VoiceType.DEFAULT,
         messagePosition: MessagePosition = MessagePosition.DEFAULT,
         dialogueId: string | null = null,
         nextMessageId: string | null = null,
@@ -48,6 +50,7 @@ export class Message {
         this.speakerName = speakerName;
         this.showSpeakerName = showSpeakerName;
         this.typewritingSpeed = typewritingSpeed;
+        this.typewritingSoundType = typewritingSoundType;
         this.messagePosition = messagePosition;
         this.dialogueId = dialogueId;
         this.nextMessageId = nextMessageId;
@@ -70,6 +73,7 @@ export class Message {
             updates.speakerName ?? this.speakerName,
             updates.showSpeakerName ?? this.showSpeakerName,
             updates.typewritingSpeed ?? this.typewritingSpeed,
+            updates.typewritingSoundType ?? this.typewritingSoundType,
             updates.messagePosition ?? this.messagePosition,
             updates.dialogueId ?? this.dialogueId,
             updates.nextMessageId ?? this.nextMessageId,
@@ -116,6 +120,13 @@ export class Message {
     }
 
     /**
+     * Checks if this message has voice typing sound
+     */
+    hasTypingSound(): boolean {
+        return this.typewritingSoundType !== VoiceType.NONE;
+    }
+
+    /**
      * Converts to a JSON-serializable format
      */
     toJSON(): object {
@@ -130,6 +141,7 @@ export class Message {
             speakerName: this.speakerName,
             showSpeakerName: this.showSpeakerName,
             typewritingSpeed: this.typewritingSpeed,
+            typewritingSoundType: this.typewritingSoundType,
             messagePosition: this.messagePosition,
             dialogueId: this.dialogueId,
             nextMessageId: this.nextMessageId,
@@ -153,6 +165,7 @@ export class Message {
             json.speakerName,
             json.showSpeakerName,
             json.typewritingSpeed,
+            json.typewritingSoundType || VoiceType.DEFAULT,
             json.messagePosition,
             json.dialogueId,
             json.nextMessageId,

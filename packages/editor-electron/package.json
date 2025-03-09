@@ -1,0 +1,49 @@
+{
+  "name": "@hedgewright/editor-electron",
+  "private": true,
+  "version": "0.0.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc -p tsconfig.json && electron .",
+    "dev:with-vite": "concurrently -n \"ELECTRON,VITE\" -c \"yellow,blue\" \"npm run dev\" \"cd ../editor && npm run dev\"",
+    "build": "tsc -p tsconfig.json",
+    "package": "electron-builder",
+    "make": "npm run build && npm run package"
+  },
+  "dependencies": {
+    "@hedgewright/common": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "concurrently": "^9.1.2",
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.2.2"
+  },
+  "build": {
+    "appId": "com.hedgewright.editor",
+    "productName": "HedgeWright Editor",
+    "directories": {
+      "output": "build-output"
+    },
+    "asar": true,
+    "files": [
+      "dist/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../editor/dist",
+        "to": "editor/dist"
+      }
+    ],
+    "extraMetadata": {
+      "main": "dist/main.js"
+    },
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "../editor/public/icon.ico"
+    }
+  }
+}

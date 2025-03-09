@@ -9,6 +9,8 @@ export class CrossExamination {
     readonly customId: string;
     readonly name: string;
     readonly witnessId: string;
+    readonly prosecutorId: string | null;
+    readonly defenseAttorneyId: string | null;
     readonly introDialogueId: string | null;
     readonly loopIntroDialogueId: string | null;
     readonly successDialogueId: string | null;
@@ -20,6 +22,8 @@ export class CrossExamination {
         customId: string,
         name: string,
         witnessId: string,
+        prosecutorId: string | null = null,
+        defenseAttorneyId: string | null = null,
         position: number,
         introDialogueId: string | null = null,
         loopIntroDialogueId: string | null = null,
@@ -31,6 +35,8 @@ export class CrossExamination {
         this.customId = customId;
         this.name = name;
         this.witnessId = witnessId;
+        this.prosecutorId = prosecutorId;
+        this.defenseAttorneyId = defenseAttorneyId;
         this.introDialogueId = introDialogueId;
         this.loopIntroDialogueId = loopIntroDialogueId;
         this.successDialogueId = successDialogueId;
@@ -47,6 +53,8 @@ export class CrossExamination {
             updates.customId ?? this.customId,
             updates.name ?? this.name,
             updates.witnessId ?? this.witnessId,
+            updates.prosecutorId ?? this.prosecutorId,
+            updates.defenseAttorneyId ?? this.defenseAttorneyId,
             updates.position ?? this.position,
             updates.introDialogueId ?? this.introDialogueId,
             updates.loopIntroDialogueId ?? this.loopIntroDialogueId,
@@ -54,6 +62,20 @@ export class CrossExamination {
             updates.failureDialogueId ?? this.failureDialogueId,
             updates.metadata ?? this.metadata
         );
+    }
+
+    /**
+     * Checks if this cross-examination has a prosecutor
+     */
+    hasProsecutor(): boolean {
+        return this.prosecutorId !== null;
+    }
+
+    /**
+     * Checks if this cross-examination has a defense attorney
+     */
+    hasDefenseAttorney(): boolean {
+        return this.defenseAttorneyId !== null;
     }
 
     /**
@@ -93,6 +115,8 @@ export class CrossExamination {
             customId: this.customId,
             name: this.name,
             witnessId: this.witnessId,
+            prosecutorId: this.prosecutorId,
+            defenseAttorneyId: this.defenseAttorneyId,
             introDialogueId: this.introDialogueId,
             loopIntroDialogueId: this.loopIntroDialogueId,
             successDialogueId: this.successDialogueId,
@@ -110,6 +134,8 @@ export class CrossExamination {
             json.customId,
             json.name,
             json.witnessId,
+            json.prosecutorId,
+            json.defenseAttorneyId,
             json.position,
             json.introDialogueId,
             json.loopIntroDialogueId,

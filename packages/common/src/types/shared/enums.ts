@@ -3,13 +3,14 @@
  */
 
 export enum TextEffectType {
-  COLOR = "color",     // Majuscules pour correspondre au code
+  COLOR = "color",
   FLASH = "flash",
   SHAKE = "shake",
   SOUND = "sound",
   WAIT = "wait",
   ICON = "icon",
-  AUTO_CONTINUE = "auto_continue"
+  AUTO_CONTINUE = "auto_continue",
+  TOGGLE_SPEAKING = "toggle_speaking"
 }
 
 export enum EventType {
@@ -44,7 +45,7 @@ export enum EventType {
 export enum EvidenceBehavior {
   DOCUMENT = "document",
   PHOTO = "photo",
-  NONE = "none"        // Majuscules pour correspondre au code
+  NONE = "none"
 }
 
 export enum AssetType {
@@ -70,7 +71,7 @@ export enum TimelineItemType {
 }
 
 export enum BubbleType {
-  OBJECTION = "objection",    // Majuscules pour correspondre au code
+  OBJECTION = "objection",
   HOLD_IT = "hold_it",
   TAKE_THAT = "take_that",
   CUSTOM = "custom"
@@ -78,5 +79,13 @@ export enum BubbleType {
 
 export enum MessagePosition {
   CENTER = "center",
-  DEFAULT = "default"        // Majuscules pour correspondre au code
+  DEFAULT = "default"
+}
+
+export enum VoiceType {
+  DEFAULT = 'default',
+  MALE = 'male',
+  FEMALE = 'female',
+  SYSTEM = 'system',
+  NONE = 'none'
 }

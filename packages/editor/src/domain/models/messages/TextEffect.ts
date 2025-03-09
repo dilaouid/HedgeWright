@@ -57,6 +57,14 @@ export class TextEffect {
     }
 
     /**
+     * Checks if this effect affects text flow
+     */
+    affectsTextFlow(): boolean {
+        return this.type === TextEffectType.WAIT || 
+               this.type === TextEffectType.AUTO_CONTINUE;
+    }
+
+    /**
      * Checks if this effect has an intensity parameter
      */
     hasIntensity(): boolean {
@@ -74,6 +82,8 @@ export class TextEffect {
                 return 'text-flash';
             case TextEffectType.SHAKE:
                 return `text-shake-${this.intensity || 'medium'}`;
+            case TextEffectType.ICON:
+                return `text-icon-${this.value}`;
             default:
                 return '';
         }

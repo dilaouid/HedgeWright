@@ -4,12 +4,15 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "outDir": "../dist/electron",
+    "outDir": "dist",
     "baseUrl": ".",
     "strict": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "paths": {
+      "@hedgewright/common/*": ["../common/src/*"]
+    }
   },
-  "include": ["**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

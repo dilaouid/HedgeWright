@@ -1,10 +1,8 @@
-// Fichier preload pour Electron
-// Expose les APIs nécessaires pour l'application
+import { ipcRenderer } from 'electron';
 
-import { contextBridge, ipcRenderer } from 'electron';
-
-// Expose les fonctions IPC protégées à travers une API contextBridge
-contextBridge.exposeInMainWorld('electron', {
+// Puisque nodeIntegration est true, nous pouvons modifier window directement
+// sans utiliser contextBridge
+window.electron = {
   // Fonctions pour communiquer avec le processus principal
   send: (channel: string, data: any) => {
     // Liste blanche des canaux autorisés
@@ -29,4 +27,19 @@ contextBridge.exposeInMainWorld('electron', {
     loadProject: () => ipcRenderer.invoke('load-project'),
     exportGame: (format: string) => ipcRenderer.invoke('export-game', format),
   }
-});
+};
+
+// Ajouter un type global pour TypeScript
+declare global {
+  interface Window {
+    electron: {
+      send: (channel: string, data: any) => void;
+      receive: (channel: string, func: Function) => void;
+      gameSystem: {
+        saveProject: (data: any) => Promise<any>;
+        loadProject: () => Promise<any>;
+        exportGame: (format: string) => Promise<any>;
+      }
+    }
+  }
+}

@@ -57,7 +57,7 @@ export class MessageBubble {
     /**
      * Checks if this bubble is associated with a dialogue
      */
-    isAssociatedWithDialogue(): boolean {
+    belongsToDialogue(): boolean {
         return this.dialogueId !== null;
     }
 

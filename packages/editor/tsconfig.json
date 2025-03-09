@@ -6,33 +6,27 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
-    "allowJs": true,
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "baseUrl": "./src",
-    "paths": {
-      "@/*": ["./*"],
-      "@components/*": ["./presentation/components/*"],
-      "@pages/*": ["./presentation/pages/*"],
-      "@layouts/*": ["./presentation/layouts/*"],
-      "@lib/*": ["./lib/*"],
-      "@styles/*": ["./styles/*"],
-      "@hedgewright/common": ["../../packages/common/src"],
-      "@hedgewright/common/*": ["../../packages/common/src/*"],
-      "@common/*": ["../../packages/common/src/*"]
-    },
+    "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/presentation/components/*"],
+      "@pages/*": ["src/presentation/pages/*"],
+      "@layouts/*": ["src/presentation/layouts/*"],
+      "@lib/*": ["src/lib/*"],
+      "@styles/*": ["src/styles/*"],
+      "@hedgewright/common/*": ["../common/src/*"],
+      "@common/*": ["../common/src/*"]
+    }
   },
   "include": ["src"],
-  "references": [{ "path": "../common" }]
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
