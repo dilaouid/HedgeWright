@@ -1,5 +1,5 @@
 import { useIpcService } from '@/infrastructure/electron/services/useIpcService';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 interface FileDialogOptions {
     title?: string;
@@ -20,26 +20,96 @@ interface FileDialogOptions {
     >;
 }
 
+// File system service that works in the browser for development
+// It uses localStorage to simulate file storage
+const browserFileSystemService = () => {
+    const getStorageKey = (path: string) => `hedgewright_file_${path}`;
+    
+    return {
+        readJsonFile: async <T>(filePath: string): Promise<T> => {
+            const key = getStorageKey(filePath);
+            const data = localStorage.getItem(key);
+            if (!data) {
+                throw new Error(`File not found: ${filePath}`);
+            }
+            return JSON.parse(data) as T;
+        },
+        
+        writeJsonFile: async <T>(filePath: string, data: T): Promise<void> => {
+            const key = getStorageKey(filePath);
+            localStorage.setItem(key, JSON.stringify(data));
+        },
+        
+        fileExists: async (filePath: string): Promise<boolean> => {
+            const key = getStorageKey(filePath);
+            return localStorage.getItem(key) !== null;
+        },
+        
+        deleteFile: async (filePath: string): Promise<void> => {
+            const key = getStorageKey(filePath);
+            localStorage.removeItem(key);
+        },
+        
+        copyFile: async (sourcePath: string, destinationPath: string): Promise<void> => {
+            const sourceKey = getStorageKey(sourcePath);
+            const destKey = getStorageKey(destinationPath);
+            const data = localStorage.getItem(sourceKey);
+            if (!data) {
+                throw new Error(`Source file not found: ${sourcePath}`);
+            }
+            localStorage.setItem(destKey, data);
+        },
+        
+        showSaveDialog: async (options?: FileDialogOptions): Promise<string | null> => {
+            // In browser mode, generate a simulated path
+            const filename = options?.defaultPath || 'untitled';
+            return `browser://${filename}`;
+        },
+        
+        showOpenDialog: async (options?: FileDialogOptions): Promise<string | null> => {
+            // This could show a custom file browser dialog in the browser
+            // For now, just return null to simulate cancelled dialog
+            return null;
+        },
+        
+        listFiles: async (dirPath: string, pattern?: string): Promise<string[]> => {
+            // List any localStorage keys that match our path prefix
+            const prefix = getStorageKey(dirPath);
+            const files: string[] = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i) || '';
+                if (key.startsWith(prefix)) {
+                    // Convert storage key back to file path
+                    const path = key.replace('hedgewright_file_', '');
+                    files.push(path);
+                }
+            }
+            
+            return files;
+        }
+    };
+};
+
 export function useFileSystemService() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
-    const ipcService = useIpcService();
+    const { invoke, isElectron } = useIpcService();
+    const browserFs = useCallback(browserFileSystemService, [])();
 
-    /**
-     * Read a JSON file and parse its contents
-     */
-    const readJsonFile = async <T>(filePath: string): Promise<T> => {
+    // Helper to execute operations with loading/error states
+    const executeWithState = async <T>(
+        operation: () => Promise<T>,
+        errorMessage: string
+    ): Promise<T> => {
         try {
             setLoading(true);
             setError(null);
-
-            const fileContent = await ipcService.invoke('file:read', filePath);
-            const parsedContent = JSON.parse(fileContent);
-
+            const result = await operation();
             setLoading(false);
-            return parsedContent;
+            return result;
         } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to read JSON file');
+            const error = err instanceof Error ? err : new Error(errorMessage);
             setError(error);
             setLoading(false);
             throw error;
@@ -47,23 +117,37 @@ export function useFileSystemService() {
     };
 
     /**
+     * Read a JSON file and parse its contents
+     */
+    const readJsonFile = async <T>(filePath: string): Promise<T> => {
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    const fileContent = await invoke('file:read', filePath);
+                    return JSON.parse(fileContent);
+                } else {
+                    return browserFs.readJsonFile<T>(filePath);
+                }
+            },
+            'Failed to read JSON file'
+        );
+    };
+
+    /**
      * Write a JSON file
      */
     const writeJsonFile = async <T>(filePath: string, data: T): Promise<void> => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const jsonString = JSON.stringify(data, null, 2);
-            await ipcService.invoke('file:write', filePath, jsonString);
-
-            setLoading(false);
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to write JSON file');
-            setError(error);
-            setLoading(false);
-            throw error;
-        }
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    const jsonString = JSON.stringify(data, null, 2);
+                    await invoke('file:write', filePath, jsonString);
+                } else {
+                    await browserFs.writeJsonFile(filePath, data);
+                }
+            },
+            'Failed to write JSON file'
+        );
     };
 
     /**
@@ -71,7 +155,11 @@ export function useFileSystemService() {
      */
     const fileExists = async (filePath: string): Promise<boolean> => {
         try {
-            return await ipcService.invoke('file:exists', filePath);
+            if (isElectron) {
+                return await invoke('file:exists', filePath);
+            } else {
+                return await browserFs.fileExists(filePath);
+            }
         } catch (err) {
             return false;
         }
@@ -81,98 +169,81 @@ export function useFileSystemService() {
      * Delete a file
      */
     const deleteFile = async (filePath: string): Promise<void> => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            await ipcService.invoke('file:delete', filePath);
-
-            setLoading(false);
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to delete file');
-            setError(error);
-            setLoading(false);
-            throw error;
-        }
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    await invoke('file:delete', filePath);
+                } else {
+                    await browserFs.deleteFile(filePath);
+                }
+            },
+            'Failed to delete file'
+        );
     };
 
     /**
      * Copy a file
      */
     const copyFile = async (sourcePath: string, destinationPath: string): Promise<void> => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            await ipcService.invoke('file:copy', sourcePath, destinationPath);
-
-            setLoading(false);
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to copy file');
-            setError(error);
-            setLoading(false);
-            throw error;
-        }
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    await invoke('file:copy', sourcePath, destinationPath);
+                } else {
+                    await browserFs.copyFile(sourcePath, destinationPath);
+                }
+            },
+            'Failed to copy file'
+        );
     };
 
     /**
      * Show a file save dialog
      */
     const showSaveDialog = async (options?: FileDialogOptions): Promise<string | null> => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const filePath = await ipcService.invoke('dialog:showSaveDialog', options);
-
-            setLoading(false);
-            return filePath || null;
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to show save dialog');
-            setError(error);
-            setLoading(false);
-            throw error;
-        }
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    return await invoke('dialog:showSaveDialog', options);
+                } else {
+                    return await browserFs.showSaveDialog(options);
+                }
+            },
+            'Failed to show save dialog'
+        );
     };
 
     /**
      * Show a file open dialog
      */
     const showOpenDialog = async (options?: FileDialogOptions): Promise<string | null> => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const filePaths = await ipcService.invoke('dialog:showOpenDialog', options);
-
-            setLoading(false);
-            return Array.isArray(filePaths) && filePaths.length > 0 ? filePaths[0] : null;
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to show open dialog');
-            setError(error);
-            setLoading(false);
-            throw error;
-        }
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    const filePaths = await invoke('dialog:showOpenDialog', options);
+                    return Array.isArray(filePaths) && filePaths.length > 0 ? filePaths[0] : null;
+                } else {
+                    return await browserFs.showOpenDialog(options);
+                }
+            },
+            'Failed to show open dialog'
+        );
     };
 
     /**
      * List files in a directory
      */
     const listFiles = async (dirPath: string, pattern?: string): Promise<string[]> => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const files = await ipcService.invoke('file:list', dirPath, pattern);
-
-            setLoading(false);
-            return files;
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error('Failed to list files');
-            setError(error);
-            setLoading(false);
-            throw error;
-        }
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    return await invoke('file:list', dirPath, pattern);
+                } else {
+                    return await browserFs.listFiles(dirPath, pattern);
+                }
+            },
+            'Failed to list files'
+        );
     };
 
     return {
@@ -185,6 +256,7 @@ export function useFileSystemService() {
         showOpenDialog,
         listFiles,
         loading,
-        error
+        error,
+        isElectron
     };
 }

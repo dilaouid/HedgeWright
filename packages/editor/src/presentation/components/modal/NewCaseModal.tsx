@@ -1,4 +1,5 @@
-import { useState } from 'react';
+// packages\editor\src\presentation\components\modal\NewCaseModal.tsx
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';

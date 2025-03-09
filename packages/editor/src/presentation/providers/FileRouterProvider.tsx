@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, {
   createContext,
   useContext,
@@ -103,6 +104,7 @@ export const FileRouterProvider: React.FC<FileRouterProviderProps> = ({
   useEffect(() => {
     // This is a reliable way to detect Electron environment
     const isElectronEnv =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       window && 'process' in window && (window as any).process?.type === 'renderer';
     setIsElectron(isElectronEnv);
 

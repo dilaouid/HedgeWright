@@ -8,12 +8,12 @@ export class BubbleSet {
     readonly uuid: string;
     readonly customId: string;
     readonly name: string;
-    readonly metadata: Record<string, any>;
+    readonly metadata: Record<string, unknown>;
 
     constructor(
         customId: string,
         name: string,
-        metadata: Record<string, any> = {}
+        metadata: Record<string, unknown> = {}
     ) {
         this.uuid = uuidv4();
         this.customId = customId;
@@ -45,13 +45,17 @@ export class BubbleSet {
     }
 
     /**
-     * Creates a BubbleSet instance from JSON data
-     */
-    static fromJSON(json: any): BubbleSet {
-        return new BubbleSet(
-            json.customId,
-            json.name,
-            json.metadata || {}
-        );
-    }
+         * Creates a BubbleSet instance from JSON data
+         */
+        static fromJSON(json: {
+            customId: string;
+            name: string;
+            metadata?: Record<string, unknown>;
+        }): BubbleSet {
+            return new BubbleSet(
+                json.customId,
+                json.name,
+                json.metadata || {}
+            );
+        }
 }

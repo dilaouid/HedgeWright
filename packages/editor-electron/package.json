@@ -3,6 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "main": "dist/main.js",
+  "author": {
+    "name": "dilaouid",
+    "email": "dilaouid@student.42.fr",
+    "url": "https://dilaouid.fr"
+  },
+  "description": "HedgeWright Editor Electron - The Electron app for the HedgeWright Editor",
   "scripts": {
     "dev": "tsc -p tsconfig.json && electron .",
     "dev:with-vite": "concurrently -n \"ELECTRON,VITE\" -c \"yellow,blue\" \"npm run dev\" \"cd ../editor && npm run dev\"",

@@ -13,7 +13,7 @@ export class Bubble {
     readonly name: string;
     readonly animationId: string;
     readonly soundId: string;
-    readonly metadata: Record<string, any>;
+    readonly metadata: Record<string, unknown>;
 
     constructor(
         customId: string,
@@ -22,7 +22,7 @@ export class Bubble {
         name: string,
         animationId: string,
         soundId: string,
-        metadata: Record<string, any> = {}
+        metadata: Record<string, unknown> = {}
     ) {
         this.uuid = uuidv4();
         this.customId = customId;
@@ -96,7 +96,15 @@ export class Bubble {
     /**
      * Creates a Bubble instance from JSON data
      */
-    static fromJSON(json: any): Bubble {
+    static fromJSON(json: {
+        customId: string;
+        bubbleSetId: string;
+        type: BubbleType;
+        name: string;
+        animationId: string;
+        soundId: string;
+        metadata?: Record<string, unknown>;
+    }): Bubble {
         return new Bubble(
             json.customId,
             json.bubbleSetId,

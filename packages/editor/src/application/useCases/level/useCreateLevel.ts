@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useFileSystemService } from '@/infrastructure/filesystem/services/useFileSystemService';
 import { useRecentProjectsStore, Project } from '@/application/state/project/recentProjectsStore';
 import { useProjectStore, ProjectData } from '@/application/state/project/projectStore';
+import { toast } from 'sonner'; // Assuming you use Sonner for toasts
 
 interface NewCaseData {
     title: string;
@@ -15,11 +16,11 @@ export function useCreateLevel() {
     const setProject = useProjectStore(state => state.setProject);
 
     const createNewCase = async (caseData: NewCaseData): Promise<Project> => {
-        // Générer un ID unique pour le projet
+        // Generate a unique ID for the project
         const projectId = uuidv4();
         const now = new Date().toISOString();
 
-        // Créer la structure de base du projet
+        // Create the basic project structure
         const projectData: ProjectData = {
             id: projectId,
             name: caseData.title,
@@ -46,46 +47,83 @@ export function useCreateLevel() {
             events: []
         };
 
-        // Initialiser également quelques variables de base que tous les niveaux doivent avoir
+        // Initialize some basic variables that all levels must have
         projectData.variables.push(
             {
                 id: uuidv4(),
                 name: 'hasSeenIntro',
                 defaultValue: false,
-                description: 'Si le joueur a vu l\'introduction'
+                description: 'If player has seen the introduction'
             }
         );
 
-        // Déclencher la boîte de dialogue "Enregistrer sous" pour les fichiers .aalevel
-        const filePath = await fileSystem.showSaveDialog({
-            title: 'Enregistrer le cas',
-            defaultPath: caseData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase(),
-            filters: [{ name: 'Ace Attorney Level', extensions: ['aalevel'] }]
-        });
+        let filePath: string | null;
 
-        if (!filePath) {
-            throw new Error('Opération annulée par l\'utilisateur');
+        try {
+            // Trigger the "Save as" dialog for .aalevel files
+            filePath = await fileSystem.showSaveDialog({
+                title: 'Save Case',
+                defaultPath: caseData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase(),
+                filters: [{ name: 'Ace Attorney Level', extensions: ['aalevel'] }]
+            });
+
+            if (!filePath) {
+                throw new Error('Operation cancelled by user');
+            }
+
+            // If we're in a browser, and it returned a browser path, append .aalevel if necessary
+            if (!fileSystem.isElectron && filePath.startsWith('browser://') && !filePath.endsWith('.aalevel')) {
+                filePath = `${filePath}.aalevel`;
+            }
+
+            // Save the file
+            await fileSystem.writeJsonFile(filePath, projectData);
+
+            // Create the recent project entry
+            const projectEntry: Project = {
+                id: projectId,
+                name: caseData.title,
+                path: filePath,
+                createdAt: now,
+                lastModified: now
+            };
+
+            // Add to recent projects
+            addProject(projectEntry);
+
+            // Load the project into the current store
+            setProject(projectData);
+            
+            if (!fileSystem.isElectron) {
+                toast.success('Project created successfully in browser storage mode');
+            }
+
+            return projectEntry;
+        } catch (error) {
+            console.error('Error creating new case:', error);
+            
+            // If we're in browser mode, create a fallback solution
+            if (!fileSystem.isElectron) {
+                const browserFilePath = `browser://${caseData.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.aalevel`;
+                await fileSystem.writeJsonFile(browserFilePath, projectData);
+                
+                const projectEntry: Project = {
+                    id: projectId,
+                    name: caseData.title,
+                    path: browserFilePath,
+                    createdAt: now,
+                    lastModified: now
+                };
+                
+                addProject(projectEntry);
+                setProject(projectData);
+                
+                toast.info('Project created in browser storage (Electron not detected)');
+                return projectEntry;
+            }
+            
+            throw error;
         }
-
-        // Enregistrer le fichier
-        await fileSystem.writeJsonFile(filePath, projectData);
-
-        // Créer l'entrée du projet récent
-        const projectEntry: Project = {
-            id: projectId,
-            name: caseData.title,
-            path: filePath,
-            createdAt: now,
-            lastModified: now
-        };
-
-        // Ajouter aux projets récents
-        addProject(projectEntry);
-
-        // Charger le projet dans le store actuel
-        setProject(projectData);
-
-        return projectEntry;
     };
 
     return { createNewCase };

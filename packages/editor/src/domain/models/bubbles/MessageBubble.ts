@@ -10,14 +10,14 @@ export class MessageBubble {
     readonly afterMessageId: string | null;
     readonly dialogueId: string | null;
     readonly bubbleId: string;
-    readonly metadata: Record<string, any>;
+    readonly metadata: Record<string, unknown>;
 
     constructor(
         bubbleId: string,
         beforeMessageId: string | null = null,
         afterMessageId: string | null = null,
         dialogueId: string | null = null,
-        metadata: Record<string, any> = {}
+        metadata: Record<string, unknown> = {}
     ) {
         this.uuid = uuidv4();
         this.beforeMessageId = beforeMessageId;
@@ -78,7 +78,13 @@ export class MessageBubble {
     /**
      * Creates a MessageBubble instance from JSON data
      */
-    static fromJSON(json: any): MessageBubble {
+    static fromJSON(json: {
+        bubbleId: string;
+        beforeMessageId?: string | null;
+        afterMessageId?: string | null;
+        dialogueId?: string | null;
+        metadata?: Record<string, unknown>;
+    }): MessageBubble {
         return new MessageBubble(
             json.bubbleId,
             json.beforeMessageId,

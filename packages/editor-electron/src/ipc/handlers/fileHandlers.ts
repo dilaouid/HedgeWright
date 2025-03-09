@@ -1,38 +1,48 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
 import fs from 'fs/promises';
 import path from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
 /**
  * Register all file-related IPC handlers
  */
 export function registerFileHandlers() {
-    // Lire un fichier
+    console.log('Registering file IPC handlers...');
+
+    // Read a file
     ipcMain.handle('file:read', async (_, filePath: string) => {
         try {
+            console.log(`Reading file: ${filePath}`);
             const content = await fs.readFile(filePath, 'utf-8');
             return content;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            throw new Error(`Impossible de lire le fichier: ${errorMessage}`);
+            console.error(`Error reading file: ${errorMessage}`);
+            throw new Error(`Cannot read file: ${errorMessage}`);
         }
     });
 
-    // Écrire dans un fichier
+    // Write to a file
     ipcMain.handle('file:write', async (_, filePath: string, content: string) => {
         try {
-            // Assurer que le dossier existe
+            console.log(`Writing to file: ${filePath}`);
+            // Ensure directory exists
             const dir = path.dirname(filePath);
-            await fs.mkdir(dir, { recursive: true });
+            if (!existsSync(dir)) {
+                mkdirSync(dir, { recursive: true });
+            }
 
-            // Écrire le fichier
+            // Write the file
             await fs.writeFile(filePath, content, 'utf-8');
+            return true;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            throw new Error(`Impossible d'écrire dans le fichier: ${errorMessage}`);
+            console.error(`Error writing file: ${errorMessage}`);
+            throw new Error(`Cannot write to file: ${errorMessage}`);
         }
     });
 
-    // Vérifier si un fichier existe
+    // Check if a file exists
     ipcMain.handle('file:exists', async (_, filePath: string) => {
         try {
             await fs.access(filePath);
@@ -42,87 +52,177 @@ export function registerFileHandlers() {
         }
     });
 
-    // Dialogue d'enregistrement de fichier
-    ipcMain.handle('dialog:save', async (event, options) => {
-        const window = BrowserWindow.fromWebContents(event.sender);
-        if (!window) throw new Error('No window found');
+    // Delete a file
+    ipcMain.handle('file:delete', async (_, filePath: string) => {
+        try {
+            await fs.unlink(filePath);
+            return true;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error deleting file: ${errorMessage}`);
+            throw new Error(`Cannot delete file: ${errorMessage}`);
+        }
+    });
 
-        const result = await dialog.showSaveDialog(window, {
-            title: options.title || 'Enregistrer le fichier',
-            defaultPath: options.defaultPath,
-            filters: options.filters || [
-                { name: 'All Files', extensions: ['*'] }
-            ],
-            properties: ['createDirectory']
-        });
+    // Copy a file
+    ipcMain.handle('file:copy', async (_, sourcePath: string, destinationPath: string) => {
+        try {
+            await fs.copyFile(sourcePath, destinationPath);
+            return true;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error copying file: ${errorMessage}`);
+            throw new Error(`Cannot copy file: ${errorMessage}`);
+        }
+    });
 
-        return result.filePath;
+    // List files in a directory
+    ipcMain.handle('file:list', async (_, dirPath: string, pattern?: string) => {
+        try {
+            const files = await fs.readdir(dirPath);
+            if (pattern) {
+                const regex = new RegExp(pattern);
+                return files.filter(file => regex.test(file)).map(file => path.join(dirPath, file));
+            }
+            return files.map(file => path.join(dirPath, file));
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error(`Error listing files: ${errorMessage}`);
+            throw new Error(`Cannot list files: ${errorMessage}`);
+        }
+    });
+
+    // Save dialog
+    ipcMain.handle('dialog:showSaveDialog', async (event, options) => {
+        console.log('Opening save dialog with options:', options);
+        const window = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getFocusedWindow();
+        if (!window) {
+            console.error('No window found for save dialog');
+            throw new Error('No window found');
+        }
+
+        try {
+            const result = await dialog.showSaveDialog(window, {
+                title: options?.title || 'Save file',
+                defaultPath: options?.defaultPath,
+                filters: options?.filters || [
+                    { name: 'All Files', extensions: ['*'] }
+                ],
+                properties: ['createDirectory', ...(options?.properties || [])]
+            });
+            
+            console.log('Save dialog result:', result);
+            return result.filePath;
+        } catch (error) {
+            console.error('Save dialog error:', error);
+            throw error;
+        }
     });
     
-    // Dialogue d'ouverture de fichier
-    ipcMain.handle('dialog:open', async (event, options) => {
-        const window = BrowserWindow.fromWebContents(event.sender);
-        if (!window) throw new Error('No window found');
+    // Open dialog
+    ipcMain.handle('dialog:showOpenDialog', async (event, options) => {
+        console.log('Opening file dialog with options:', options);
+        const window = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getFocusedWindow();
+        if (!window) {
+            console.error('No window found for open dialog');
+            throw new Error('No window found');
+        }
 
-        const result = await dialog.showOpenDialog(window, {
-            title: options.title || 'Ouvrir un fichier',
-            filters: options.filters || [
-                { name: 'All Files', extensions: ['*'] }
-            ],
-            properties: options.properties || ['openFile']
-        });
-
-        return result.filePaths;
+        try {
+            const result = await dialog.showOpenDialog(window, {
+                title: options?.title || 'Open file',
+                defaultPath: options?.defaultPath,
+                filters: options?.filters || [
+                    { name: 'All Files', extensions: ['*'] }
+                ],
+                properties: options?.properties || ['openFile']
+            });
+            
+            console.log('Open dialog result:', result);
+            return result.filePaths;
+        } catch (error) {
+            console.error('Open dialog error:', error);
+            throw error;
+        }
     });
 
-    // Handlers for game-specific functions
-    ipcMain.handle('save-project', async (_, data) => {
-        const window = BrowserWindow.getAllWindows()[0];
-        if (!window) throw new Error('No window found');
+    // Game-specific handlers
+    ipcMain.handle('save-project', async (event, data) => {
+        console.log('Handling save-project request');
+        const window = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getFocusedWindow();
+        if (!window) {
+            console.error('No window found for save-project dialog');
+            throw new Error('No window found');
+        }
 
-        const result = await dialog.showSaveDialog(window, {
-            title: 'Enregistrer le projet',
-            filters: [{ name: 'HedgeWright Project', extensions: ['aaproject'] }],
-            properties: ['createDirectory']
-        });
+        try {
+            const result = await dialog.showSaveDialog(window, {
+                title: 'Save Project',
+                filters: [{ name: 'HedgeWright Project', extensions: ['aalevel'] }],
+                properties: ['createDirectory']
+            });
 
-        if (result.filePath) {
-            await fs.writeFile(result.filePath, JSON.stringify(data, null, 2), 'utf-8');
+            if (result.filePath) {
+                await fs.writeFile(result.filePath, JSON.stringify(data, null, 2), 'utf-8');
+                return result.filePath;
+            }
+            return null;
+        } catch (error) {
+            console.error('Save project error:', error);
+            throw error;
+        }
+    });
+
+    ipcMain.handle('load-project', async (event) => {
+        console.log('Handling load-project request');
+        const window = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getFocusedWindow();
+        if (!window) {
+            console.error('No window found for load-project dialog');
+            throw new Error('No window found');
+        }
+
+        try {
+            const result = await dialog.showOpenDialog(window, {
+                title: 'Open Project',
+                filters: [{ name: 'HedgeWright Project', extensions: ['aalevel'] }],
+                properties: ['openFile']
+            });
+
+            if (result.filePaths.length > 0) {
+                const content = await fs.readFile(result.filePaths[0], 'utf-8');
+                return {
+                    filePath: result.filePaths[0],
+                    data: JSON.parse(content)
+                };
+            }
+            return null;
+        } catch (error) {
+            console.error('Load project error:', error);
+            throw error;
+        }
+    });
+
+    ipcMain.handle('export-game', async (event, format) => {
+        console.log('Handling export-game request, format:', format);
+        const window = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getFocusedWindow();
+        if (!window) {
+            console.error('No window found for export-game dialog');
+            throw new Error('No window found');
+        }
+
+        try {
+            const result = await dialog.showSaveDialog(window, {
+                title: 'Export Game',
+                filters: [{ name: 'HedgeWright Game', extensions: ['aagame'] }],
+                properties: ['createDirectory']
+            });
+
             return result.filePath;
+        } catch (error) {
+            console.error('Export game error:', error);
+            throw error;
         }
-        return null;
     });
 
-    ipcMain.handle('load-project', async () => {
-        const window = BrowserWindow.getAllWindows()[0];
-        if (!window) throw new Error('No window found');
-
-        const result = await dialog.showOpenDialog(window, {
-            title: 'Ouvrir un projet',
-            filters: [{ name: 'HedgeWright Project', extensions: ['aaproject'] }],
-            properties: ['openFile']
-        });
-
-        if (result.filePaths.length > 0) {
-            const content = await fs.readFile(result.filePaths[0], 'utf-8');
-            return {
-                filePath: result.filePaths[0],
-                data: JSON.parse(content)
-            };
-        }
-        return null;
-    });
-
-    ipcMain.handle('export-game', async () => {
-        const window = BrowserWindow.getAllWindows()[0];
-        if (!window) throw new Error('No window found');
-
-        const result = await dialog.showSaveDialog(window, {
-            title: 'Exporter le jeu',
-            filters: [{ name: 'HedgeWright Game', extensions: ['aagame'] }],
-            properties: ['createDirectory']
-        });
-
-        return result.filePath;
-    });
+    console.log('File IPC handlers registered successfully');
 }

@@ -1,45 +1,57 @@
-import { ipcRenderer } from 'electron';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { contextBridge, ipcRenderer } from 'electron';
 
-// Puisque nodeIntegration est true, nous pouvons modifier window directement
-// sans utiliser contextBridge
-window.electron = {
-  // Fonctions pour communiquer avec le processus principal
-  send: (channel: string, data: any) => {
-    // Liste blanche des canaux autorisés
-    const validChannels = ['save-file', 'open-file', 'export-game'];
-    if (validChannels.includes(channel)) {
-      ipcRenderer.send(channel, data);
-    }
-  },
-  receive: (channel: string, func: Function) => {
-    // Liste blanche des canaux autorisés
-    const validChannels = ['file-saved', 'file-opened', 'game-exported'];
-    if (validChannels.includes(channel)) {
-      // Supprime les anciens listeners pour éviter les doublons
-      ipcRenderer.removeAllListeners(channel);
-      // Ajoute un nouveau listener
-      ipcRenderer.on(channel, (_, ...args) => func(...args));
-    }
-  },
-  // Fonctions spécifiques à Ace Attorney
-  gameSystem: {
-    saveProject: (data: any) => ipcRenderer.invoke('save-project', data),
-    loadProject: () => ipcRenderer.invoke('load-project'),
-    exportGame: (format: string) => ipcRenderer.invoke('export-game', format),
-  }
-};
-
-// Ajouter un type global pour TypeScript
-declare global {
-  interface Window {
-    electron: {
-      send: (channel: string, data: any) => void;
-      receive: (channel: string, func: Function) => void;
-      gameSystem: {
-        saveProject: (data: any) => Promise<any>;
-        loadProject: () => Promise<any>;
-        exportGame: (format: string) => Promise<any>;
+// Expose protected methods that allow the renderer process to use
+// the ipcRenderer without exposing the entire object
+contextBridge.exposeInMainWorld('electron', {
+  ipcRenderer: {
+    invoke: (channel: string, ...args: any[]) => {
+      const validChannels = [
+        'file:read', 
+        'file:write', 
+        'file:exists', 
+        'file:delete', 
+        'file:copy', 
+        'file:list',
+        'dialog:showSaveDialog', 
+        'dialog:showOpenDialog',
+        'save-project',
+        'load-project',
+        'export-game'
+      ];
+      if (validChannels.includes(channel)) {
+        return ipcRenderer.invoke(channel, ...args);
       }
+      
+      throw new Error(`Invalid channel: ${channel}`);
+    },
+    on: (channel: string, func: (...args: any[]) => void) => {
+      const validChannels = [
+        'file-saved', 
+        'file-opened', 
+        'game-exported'
+      ];
+      if (validChannels.includes(channel)) {
+        // Deliberately strip event as it includes `sender` 
+        ipcRenderer.on(channel, (_, ...args) => func(...args));
+      }
+    },
+    once: (channel: string, func: (...args: any[]) => void) => {
+      const validChannels = [
+        'file-saved', 
+        'file-opened', 
+        'game-exported'
+      ];
+      if (validChannels.includes(channel)) {
+        // Deliberately strip event as it includes `sender` 
+        ipcRenderer.once(channel, (_, ...args) => func(...args));
+      }
+    },
+    removeListener: (channel: string, func: (...args: any[]) => void) => {
+      ipcRenderer.removeListener(channel, func);
     }
   }
-}
+});
+
+// Log to confirm preload script has run
+console.log('Preload script executed');

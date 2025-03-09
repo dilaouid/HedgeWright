@@ -31,15 +31,28 @@ export default defineConfig({
     base: './',
     build: {
         outDir: 'dist',
+        emptyOutDir: true,
+        sourcemap: false,
         reportCompressedSize: false,
         chunkSizeWarningLimit: 1600,
         rollupOptions: {
-            external: [
-                /src\/domain\/.*/,
-                /src\/presentation\/app.tsx/,
-                /src\/presentation\/routes.tsx/,
-                /src\/stories\/.*/
-            ]
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom'],
+                    ui: [
+                        '@radix-ui/react-accordion',
+                        '@radix-ui/react-checkbox',
+                        '@radix-ui/react-dialog',
+                        '@radix-ui/react-dropdown-menu',
+                        '@radix-ui/react-label',
+                        '@radix-ui/react-scroll-area',
+                        '@radix-ui/react-select',
+                        '@radix-ui/react-slot',
+                        '@radix-ui/react-tabs',
+                        '@radix-ui/react-tooltip',
+                    ],
+                },
+            }
         }
     }
 });

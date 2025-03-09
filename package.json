@@ -12,7 +12,8 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "make": "turbo run build --filter=@hedgewright/editor --filter=@hedgewright/editor-electron && cd packages/editor-electron && npm run package"
+    "make": "turbo run build --filter=@hedgewright/editor --filter=@hedgewright/editor-electron && cd packages/editor-electron && npm run package",
+    "rebuild-all": "rm -rf packages/editor/dist packages/editor-electron/dist packages/editor-electron/build-output && pnpm run build --filter=@hedgewright/common && pnpm run build --filter=@hedgewright/editor && pnpm run build --filter=@hedgewright/editor-electron && cd packages/editor-electron && pnpm run package"
   },
   "devDependencies": {
     "prettier": "^3.5.0",
