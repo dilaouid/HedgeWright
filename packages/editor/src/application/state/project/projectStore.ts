@@ -62,6 +62,8 @@ export interface Asset {
     name: string;
     type: string;
     path: string;
+    relativePath?: string; // Path relative to project folder for portability
+    category?: string; // e.g., 'background', 'character', 'evidence'
     metadata?: Record<string, any>;
 }
 
@@ -89,9 +91,28 @@ export interface Music {
     id: string;
     name: string;
     path: string;
+    relativePath?: string; // Path relative to project folder
     type: string; // bgm, sfx, voice, etc.
     loop?: boolean;
     metadata?: Record<string, any>;
+}
+
+export interface FolderStructure {
+    audio: {
+        bgm: string[];
+        sfx: string[];
+        voices: string[];
+    };
+    img: {
+        backgrounds: string[];
+        characters: string[];
+        profiles: string[];
+        evidence: string[];
+        ui: string[];
+        effects: string[];
+    };
+    documents: string[];
+    data: string[];
 }
 
 export interface ProjectData {
@@ -99,6 +120,8 @@ export interface ProjectData {
     name: string;
     createdAt: string;
     lastModified: string;
+    projectFolderPath: string; // Required - path to the project folder
+    folders?: FolderStructure; // Optional structure to track folder contents
     scenes: string[]; // Array of scene IDs
     investigations: string[]; // Array of investigation IDs
     dialogues: string[]; // Array of dialogue IDs 
@@ -131,10 +154,31 @@ interface ProjectState {
     markDirty: (isDirty: boolean) => void;
 }
 
+// Create default folder structure
+const createDefaultFolderStructure = (): FolderStructure => ({
+    audio: {
+        bgm: [],
+        sfx: [],
+        voices: []
+    },
+    img: {
+        backgrounds: [],
+        characters: [],
+        profiles: [],
+        evidence: [],
+        ui: [],
+        effects: []
+    },
+    documents: [],
+    data: []
+});
+
 // Create normalized structure for missing fields
 const normalizeProject = (project: Partial<ProjectData>): ProjectData => {
     return {
         ...project,
+        projectFolderPath: project.projectFolderPath || '',
+        folders: project.folders || createDefaultFolderStructure(),
         assets: project.assets || [],
         music: project.music || [],
         characters: project.characters || [],

@@ -135,7 +135,7 @@ export function SwitchesPage() {
     }
   };
 
-  const handleDeleteSwitch = (id: string) => {
+  /* const handleDeleteSwitch = (id: string) => {
     // Éviter d'utiliser window.confirm qui peut causer des problèmes de focus
     try {
       // Créer un élément temporaire pour conserver le focus
@@ -156,7 +156,7 @@ export function SwitchesPage() {
         `Failed to delete switch: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
-  };
+  }; */
 
   const handleToggleValue = (id: string, currentValue: boolean) => {
     try {

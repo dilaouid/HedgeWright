@@ -5,6 +5,7 @@ export interface Project {
     id: string;
     name: string;
     path: string;
+    folderPath: string; 
     createdAt: string;
     lastModified: string;
     thumbnailPath?: string;

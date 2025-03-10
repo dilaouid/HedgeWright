@@ -8,6 +8,7 @@ interface FileDialogOptions {
         name: string;
         extensions: string[];
     }>;
+    buttonLabel?: string;
     properties?: Array<
         | 'openFile'
         | 'openDirectory'
@@ -26,6 +27,20 @@ const browserFileSystemService = () => {
     const getStorageKey = (path: string) => `hedgewright_file_${path}`;
     
     return {
+        readFile: async (filePath: string): Promise<string> => {
+            const key = getStorageKey(filePath);
+            const data = localStorage.getItem(key);
+            if (!data) {
+                throw new Error(`File not found: ${filePath}`);
+            }
+            return data;
+        },
+        
+        writeFile: async (filePath: string, content: string): Promise<void> => {
+            const key = getStorageKey(filePath);
+            localStorage.setItem(key, content);
+        },
+        
         readJsonFile: async <T>(filePath: string): Promise<T> => {
             const key = getStorageKey(filePath);
             const data = localStorage.getItem(key);
@@ -87,6 +102,12 @@ const browserFileSystemService = () => {
             }
             
             return files;
+        },
+        
+        createDirectory: async (dirPath: string): Promise<void> => {
+            // In browser mode, directories are virtual
+            // We don't need to do anything specific here
+            return Promise.resolve();
         }
     };
 };
@@ -117,13 +138,45 @@ export function useFileSystemService() {
     };
 
     /**
+     * Read a file as text
+     */
+    const readFile = async (filePath: string): Promise<string> => {
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    return await invoke('file:read', filePath);
+                } else {
+                    return await browserFs.readFile(filePath);
+                }
+            },
+            'Failed to read file'
+        );
+    };
+
+    /**
+     * Write a text file
+     */
+    const writeFile = async (filePath: string, content: string): Promise<void> => {
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    await invoke('file:write', filePath, content);
+                } else {
+                    await browserFs.writeFile(filePath, content);
+                }
+            },
+            'Failed to write file'
+        );
+    };
+
+    /**
      * Read a JSON file and parse its contents
      */
     const readJsonFile = async <T>(filePath: string): Promise<T> => {
         return executeWithState(
             async () => {
                 if (isElectron) {
-                    const fileContent = await invoke('file:read', filePath);
+                    const fileContent = await readFile(filePath);
                     return JSON.parse(fileContent);
                 } else {
                     return browserFs.readJsonFile<T>(filePath);
@@ -141,7 +194,7 @@ export function useFileSystemService() {
             async () => {
                 if (isElectron) {
                     const jsonString = JSON.stringify(data, null, 2);
-                    await invoke('file:write', filePath, jsonString);
+                    await writeFile(filePath, jsonString);
                 } else {
                     await browserFs.writeJsonFile(filePath, data);
                 }
@@ -198,6 +251,22 @@ export function useFileSystemService() {
     };
 
     /**
+     * Create a directory
+     */
+    const createDirectory = async (dirPath: string): Promise<void> => {
+        return executeWithState(
+            async () => {
+                if (isElectron) {
+                    await invoke('file:createDirectory', dirPath);
+                } else {
+                    await browserFs.createDirectory(dirPath);
+                }
+            },
+            'Failed to create directory'
+        );
+    };
+
+    /**
      * Show a file save dialog
      */
     const showSaveDialog = async (options?: FileDialogOptions): Promise<string | null> => {
@@ -247,11 +316,14 @@ export function useFileSystemService() {
     };
 
     return {
+        readFile,
+        writeFile,
         readJsonFile,
         writeJsonFile,
         fileExists,
         deleteFile,
         copyFile,
+        createDirectory,
         showSaveDialog,
         showOpenDialog,
         listFiles,

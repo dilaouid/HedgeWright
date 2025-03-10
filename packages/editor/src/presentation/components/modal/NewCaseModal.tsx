@@ -68,7 +68,7 @@ export function NewCaseModal({ isOpen, onClose }: NewCaseModalProps) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Une erreur est survenue lors de la création du cas'
+          : 'An error occurred while creating the case'
       );
     } finally {
       setIsCreating(false);
@@ -89,7 +89,7 @@ export function NewCaseModal({ isOpen, onClose }: NewCaseModalProps) {
       <div className="w-full max-w-md bg-gradient-to-b from-blue-900 to-blue-950 border-4 border-blue-700 rounded-lg shadow-2xl z-10 overflow-hidden">
         {/* Header */}
         <div className="bg-blue-800 p-4 flex justify-between items-center border-b-2 border-blue-700">
-          <h2 className="text-xl font-bold text-white">NOUVEAU CAS</h2>
+          <h2 className="text-xl font-bold text-white">NEW CASE</h2>
           <button onClick={onClose} className="text-blue-200 hover:text-white">
             <X size={24} />
           </button>
@@ -100,7 +100,7 @@ export function NewCaseModal({ isOpen, onClose }: NewCaseModalProps) {
           {/* Titre */}
           <div>
             <label className="block text-blue-200 font-bold mb-2">
-              Titre du cas
+              Case Title
             </label>
             <input
               {...register('title')}
@@ -117,7 +117,7 @@ export function NewCaseModal({ isOpen, onClose }: NewCaseModalProps) {
 
           {/* Auteur */}
           <div>
-            <label className="block text-blue-200 font-bold mb-2">Auteur</label>
+            <label className="block text-blue-200 font-bold mb-2">Author</label>
             <input
               {...register('author')}
               type="text"
@@ -134,7 +134,7 @@ export function NewCaseModal({ isOpen, onClose }: NewCaseModalProps) {
           {/* Description */}
           <div>
             <label className="block text-blue-200 font-bold mb-2">
-              Description (optionnel)
+              Description (optional)
             </label>
             <textarea
               {...register('description')}
@@ -164,7 +164,7 @@ export function NewCaseModal({ isOpen, onClose }: NewCaseModalProps) {
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded font-bold transition-colors"
               disabled={isCreating}
             >
-              Annuler
+              Cancel
             </button>
             <button
               type="submit"
@@ -193,10 +193,10 @@ export function NewCaseModal({ isOpen, onClose }: NewCaseModalProps) {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Création...
+                  Creating case...
                 </>
               ) : (
-                'Créer le cas'
+                'Create Case'
               )}
             </button>
           </div>

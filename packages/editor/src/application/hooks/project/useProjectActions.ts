@@ -1,16 +1,40 @@
-// packages\editor\src\application\hooks\project\useProjectActions.ts
 import { useState } from 'react';
+import path from 'path-browserify';
 import { nanoid } from 'nanoid';
+
 import { useProjectStore } from '@/application/state/project/projectStore';
 import { useDialogs } from '@/presentation/hooks/useDialogs';
 import { useToast } from '@/presentation/hooks/useToast';
+import { useRecentProjectsStore } from '@/application/state/project/recentProjectsStore';
 import { useFileSystemService } from '@/infrastructure/filesystem/services/useFileSystemService';
-import { useRecentProjectsStore, Project } from '@/application/state/project/recentProjectsStore';
+
+// Define our project folder structure
+const PROJECT_FOLDERS = [
+    'audio/bgm',
+    'audio/sfx',
+    'audio/voices',
+    'img/backgrounds',
+    'img/characters',
+    'img/profiles',
+    'img/evidence',
+    'img/effects',
+    'documents',
+    'data'
+];
 
 export interface CreateProjectOptions {
     name?: string;
     template?: string; // ID or path of template to use
     path?: string; // Custom save location
+}
+
+export interface Project {
+    id: string;
+    name: string;
+    path: string;
+    folderPath: string; // Made non-optional to match recentProjectsStore's Project interface
+    createdAt: string;
+    lastModified: string;
 }
 
 export function useProjectActions() {
@@ -22,6 +46,27 @@ export function useProjectActions() {
     const toast = useToast();
 
     /**
+     * Create folder structure for a new project
+     */
+    const createProjectFolders = async (projectFolderPath: string) => {
+        try {
+            // Create main project folder
+            await fileSystem.createDirectory(projectFolderPath);
+            
+            // Create all subfolders
+            for (const folder of PROJECT_FOLDERS) {
+                const folderPath = path.join(projectFolderPath, folder);
+                await fileSystem.createDirectory(folderPath);
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Failed to create project folders:', error);
+            throw error;
+        }
+    };
+
+    /**
      * Create a new project
      */
     const createProject = async (options?: CreateProjectOptions) => {
@@ -30,45 +75,55 @@ export function useProjectActions() {
 
             // Generate a project ID
             const projectId = nanoid();
-
-            // Allow the user to select where to save the project
-            let projectPath = options?.path;
-            if (!projectPath) {
-                const selectedPath = await showSaveDialog({
-                    title: 'Create New Project',
-                    defaultPath: `${options?.name || 'New Project'}.aalevel`,
-                    filters: [
-                        { name: 'HedgeWright Level', extensions: ['aalevel'] }
-                    ]
+            
+            // Allow the user to select where to save the project folder
+            let projectFolderPath = options?.path;
+            
+            if (!projectFolderPath) {
+                // First let the user choose a folder location
+                const folderPath = await showSaveDialog({
+                    title: 'Select Location for Project Folder',
+                    defaultPath: options?.name || 'New Project',
+                    properties: ['createDirectory'],
+                    buttonLabel: 'Create Project'
                 });
 
                 // User cancelled the dialog
-                if (!selectedPath) {
+                if (!folderPath) {
                     setLoading(false);
                     return null;
                 }
-
-                projectPath = selectedPath;
+                
+                projectFolderPath = folderPath;
             }
-
-            // Generate project structure
-            const projectName = options?.name || 'New Project';
+            
+            // Get project name from folder name if not specified
+            const projectName = options?.name || path.basename(projectFolderPath);
             const now = new Date().toISOString();
+            
+            // Create the folder structure
+            await createProjectFolders(projectFolderPath);
+            
+            // Define the path for the main project file inside the folder
+            const projectFilePath = path.join(projectFolderPath, `${projectName}.aalevel`);
 
+            // Project record for the recent projects store
             const newProject: Project = {
                 id: projectId,
                 name: projectName,
-                path: projectPath,
+                path: projectFilePath,
+                folderPath: projectFolderPath,
                 createdAt: now,
                 lastModified: now,
             };
 
-            // Create initial project structure with complete fields
+            // Create initial project data
             const initialProjectData = {
                 id: projectId,
                 name: projectName,
                 createdAt: now,
                 lastModified: now,
+                projectFolderPath: projectFolderPath, // Store the folder path in the project data
                 scenes: [],
                 evidence: [],
                 profiles: [],
@@ -99,15 +154,41 @@ export function useProjectActions() {
                 crossExaminations: [],
                 messages: [],
                 events: [],
-                // Add the missing fields
                 assets: [],
                 music: [],
                 characters: [],
                 backgrounds: []
             };
 
-            // Save the project to disk
-            await fileSystem.writeJsonFile(projectPath, initialProjectData);
+            // Create a README.md file with project info
+            const readmePath = path.join(projectFolderPath, 'README.md');
+            const readmeContent = `# ${projectName}
+
+Created: ${new Date(now).toLocaleDateString()}
+
+## Project Structure
+- audio/ - All audio assets
+  - bgm/ - Background music
+  - sfx/ - Sound effects
+  - voices/ - Character voices
+- img/ - All image assets
+  - backgrounds/ - Scene backgrounds
+  - characters/ - Character sprites
+  - profiles/ - Character profile pictures
+  - evidence/ - Evidence images
+  - effects/ - Visual effects
+- documents/ - Additional documentation
+- data/ - Game data files
+
+## Getting Started
+Place your assets in the corresponding folders and reference them in the editor.
+`;
+
+            // Write the README file
+            await fileSystem.writeFile(readmePath, readmeContent);
+
+            // Save the project file
+            await fileSystem.writeJsonFile(projectFilePath, initialProjectData);
 
             // Update stores
             addProject(newProject);
@@ -159,6 +240,7 @@ export function useProjectActions() {
             const projectData = await fileSystem.readJsonFile(projectPath) as {
                 id: string;
                 name: string;
+                projectFolderPath?: string;
                 createdAt?: string;
                 [key: string]: unknown;
             };
@@ -168,18 +250,24 @@ export function useProjectActions() {
                 throw new Error('Invalid project file format');
             }
 
+            // Determine folder path - either from the project data or from the file location
+            // Make sure folderPath is always defined since the recentProjectsStore expects it
+            const folderPath = projectData.projectFolderPath || path.dirname(projectPath);
+
             // Update project in recent projects
             const now = new Date().toISOString();
             const projectToUpdate: Project = {
                 id: projectData.id,
                 name: projectData.name,
                 path: projectPath,
+                folderPath, // This is now guaranteed to be a string
                 createdAt: projectData.createdAt || now,
                 lastModified: now,
             };
 
             // Update stores
             addProject(projectToUpdate); // This will move it to the top of recent projects
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             setProject(projectData as any); // Type assertion needed due to potential missing fields in loaded project
 
             toast.success(`Project "${projectData.name}" loaded successfully`);
@@ -239,7 +327,7 @@ export function useProjectActions() {
         }
     };
 
-    // The rest of the code remains the same
+    // Return all the functions
     return {
         createProject,
         loadProject,
