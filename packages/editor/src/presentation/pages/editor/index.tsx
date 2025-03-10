@@ -119,10 +119,10 @@ export function EditorPage() {
       count: assetCount, 
     },
     {
-      name: 'Variables',
+      name: 'Switches',
       icon: <Variable className="h-10 w-10" />,
       description: 'Manage game flags and variable states',
-      path: '/variables',
+      path: '/switches',
       count: currentProject.variables.length,
     },
   ];
