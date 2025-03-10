@@ -1,3 +1,4 @@
+// packages\editor\src\infrastructure\electron\services\useIpcService.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback } from 'react';
 
