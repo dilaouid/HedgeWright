@@ -14,9 +14,6 @@ export interface SerializedAsset extends BaseSerializedNamedModel {
 export interface SerializedMusic extends BaseSerializedNamedModel {
   path: string;
   musicType: MusicType;
-  duration: number;
   volume: number;
   loop: boolean;
-  loopStartTime?: number;
-  loopEndTime?: number;
 } 

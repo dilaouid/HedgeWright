@@ -46,7 +46,6 @@ export class Switch {
     toJSON(): object {
         return {
             uuid: this.uuid,
-            customId: this.customId,
             name: this.name,
             numericId: this.numericId,
             description: this.description,

@@ -5,22 +5,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import { MusicType } from '../../types';
 
-export interface LoopPoints {
-  start: number;  // Start position in milliseconds
-  end: number;    // End position in milliseconds
-}
-
 export class Music {
   readonly uuid: string;
   readonly customId: string;
   readonly name: string;
   readonly path: string;
   readonly musicType: MusicType;
-  readonly duration: number; // In seconds
   readonly volume: number;
   readonly loop: boolean;
-  readonly loopStartTime: number | null;
-  readonly loopEndTime: number | null;
   readonly metadata: Record<string, any>;
 
   constructor(
@@ -28,11 +20,8 @@ export class Music {
     name: string,
     path: string,
     musicType: MusicType,
-    duration: number = 0,
     volume: number = 1,
     loop: boolean = false,
-    loopStartTime: number | null = null,
-    loopEndTime: number | null = null,
     metadata: Record<string, any> = {}
   ) {
     this.uuid = uuidv4();
@@ -40,11 +29,8 @@ export class Music {
     this.name = name;
     this.path = path;
     this.musicType = musicType;
-    this.duration = duration;
     this.volume = volume;
     this.loop = loop;
-    this.loopStartTime = loopStartTime;
-    this.loopEndTime = loopEndTime;
     this.metadata = metadata;
   }
 
@@ -57,11 +43,8 @@ export class Music {
       updates.name ?? this.name,
       updates.path ?? this.path,
       updates.musicType ?? this.musicType,
-      updates.duration ?? this.duration,
       updates.volume ?? this.volume,
       updates.loop ?? this.loop,
-      updates.loopStartTime ?? this.loopStartTime,
-      updates.loopEndTime ?? this.loopEndTime,
       updates.metadata ?? this.metadata
     );
   }
@@ -77,7 +60,7 @@ export class Music {
    * Checks if this is a sound effect
    */
   isSoundEffect(): boolean {
-    return this.musicType === MusicType.SFX || this.musicType === MusicType.JINGLE;
+    return this.musicType === MusicType.SFX;
   }
 
   /**
@@ -85,19 +68,6 @@ export class Music {
    */
   isVoice(): boolean {
     return this.musicType === MusicType.VOICE;
-  }
-
-  /**
-   * Gets loop points as a structured object
-   */
-  getLoopPoints(): LoopPoints | null {
-    if (this.loopStartTime !== null && this.loopEndTime !== null) {
-      return {
-        start: this.loopStartTime,
-        end: this.loopEndTime
-      };
-    }
-    return null;
   }
 
   /**
@@ -110,11 +80,8 @@ export class Music {
       name: this.name,
       path: this.path,
       musicType: this.musicType,
-      duration: this.duration,
       volume: this.volume,
       loop: this.loop,
-      loopStartTime: this.loopStartTime,
-      loopEndTime: this.loopEndTime,
       metadata: this.metadata
     };
   }
@@ -128,11 +95,8 @@ export class Music {
       json.name,
       json.path,
       json.musicType,
-      json.duration,
       json.volume,
       json.loop,
-      json.loopStartTime,
-      json.loopEndTime,
       json.metadata || {}
     );
   }

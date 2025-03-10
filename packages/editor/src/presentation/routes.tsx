@@ -14,6 +14,7 @@ import { EvidencePage } from './pages/evidence';
 import { TimelinePage } from './pages/timeline';
 import { SettingsPage } from './pages/settings';
 import { PreviewPage } from './pages/preview'; */
+import { AssetsPage } from './pages/assets';
 import { CharactersPage } from './pages/characters';
 import { SwitchesPage } from './pages/switches';
 import { NotFoundPage } from './pages/404';
@@ -53,14 +54,21 @@ const rootRoute = createRootRoute({
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: HomePage,
+  component: HomePage
 });
 
 // Editor main route
 const editorRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/editor',
-  component: EditorPage,
+  component: EditorPage
+});
+
+// Assets editor route
+const assetsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/assets',
+  component: AssetsPage
 });
 
 // Scene editor route
@@ -166,6 +174,7 @@ export const router = createRouter({
     timelineRoute,
     settingsRoute,
     previewRoute, */
+    assetsRoute,
     charactersRoute,
     switchesRoute,
     notFoundRoute,

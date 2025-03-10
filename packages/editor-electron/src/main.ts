@@ -1,7 +1,9 @@
+// packages\editor-electron\src\main.ts
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { registerFileHandlers } from './ipc/handlers/fileHandlers';
+import { registerAssetHandlers } from './ipc/handlers/assetHandlers';
 
 // Determine if we're in development mode
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -26,9 +28,6 @@ function createWindow() {
     show: false, // Don't show until content is loaded
     icon: path.join(__dirname, isDev ? '../../editor/public/icon.png' : '../editor/dist/icon.png'),
   });
-
-  // Register IPC handlers
-  registerFileHandlers();
   
   // Load the app
   loadApplication(mainWindow);
@@ -165,7 +164,14 @@ File exists: ${fs.existsSync(indexHtmlPath)}
 }
 
 // When Electron has finished initialization
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  // Enregistrer les handlers AVANT de créer la fenêtre
+  console.log('Registering IPC handlers...');
+  registerFileHandlers();
+  registerAssetHandlers();
+  
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS
 app.on('window-all-closed', () => {

@@ -11,7 +11,6 @@ export class Asset {
   readonly name: string;
   readonly type: AssetType;
   readonly path: string;
-  readonly size: number;
   readonly mimeType: string;
   readonly metadata: Record<string, any>;
 
@@ -20,7 +19,6 @@ export class Asset {
     name: string,
     type: AssetType,
     path: string,
-    size: number = 0,
     mimeType: string = '',
     metadata: Record<string, any> = {}
   ) {
@@ -29,7 +27,6 @@ export class Asset {
     this.name = name;
     this.type = type;
     this.path = path;
-    this.size = size;
     this.mimeType = mimeType;
     this.metadata = metadata;
   }
@@ -43,7 +40,6 @@ export class Asset {
       updates.name ?? this.name,
       updates.type ?? this.type,
       updates.path ?? this.path,
-      updates.size ?? this.size,
       updates.mimeType ?? this.mimeType,
       updates.metadata ?? this.metadata
     );
@@ -59,7 +55,6 @@ export class Asset {
       name: this.name,
       type: this.type,
       path: this.path,
-      size: this.size,
       mimeType: this.mimeType,
       metadata: this.metadata
     };
@@ -74,7 +69,6 @@ export class Asset {
       json.name,
       json.type,
       json.path,
-      json.size,
       json.mimeType,
       json.metadata || {}
     );

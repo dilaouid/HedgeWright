@@ -40,6 +40,10 @@
       {
         "from": "../editor/dist",
         "to": "editor/dist"
+      },
+      {
+        "from": "../editor/public/aaa",
+        "to": "default-assets"
       }
     ],
     "extraMetadata": {

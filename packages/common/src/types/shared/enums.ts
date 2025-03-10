@@ -57,8 +57,6 @@ export enum AssetType {
 
 export enum MusicType {
   BGM = "bgm",
-  JINGLE = "jingle",
-  AMBIENCE = "ambience",
   SFX = "sfx",
   VOICE = "voice"
 }
