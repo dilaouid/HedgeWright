@@ -1,3 +1,4 @@
+/* eslint-disable react/react-in-jsx-scope */
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useRecentProjects } from '@/application/hooks/project/useRecentProjects';
@@ -127,11 +128,11 @@ export function HomePage() {
       <footer className="bg-blue-950 border-t border-blue-800 p-4 text-center text-blue-300 text-sm">
         <div className="max-w-5xl mx-auto">
           <p className="mb-2">
-            HedgeWright Editor v1.0.0 • Not affiliated with Capcom or Ace
+            HedgeWright Editor v0.0.0 • Not affiliated with Capcom or Ace
             Attorney
           </p>
           <p>
-            © 2024 • Made with <span className="text-red-500">♥</span> for
+            © 2025 • Made with <span className="text-red-500">♥</span> for
             fans of the series
           </p>
         </div>

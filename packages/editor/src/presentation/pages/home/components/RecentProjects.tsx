@@ -1,3 +1,4 @@
+/* eslint-disable react/react-in-jsx-scope */
 // packages/editor/src/presentation/pages/home/components/RecentProjects.tsx
 import { format } from 'date-fns';
 import { useProjectActions } from '@/application/hooks/project/useProjectActions';
@@ -9,7 +10,7 @@ export function RecentProjects({
   isLoading,
   onSelectProject,
 }: RecentProjectsProps) {
-  const { deleteProject } = useProjectActions();
+  const { removeProject } = useProjectActions();
 
   if (isLoading) {
     return (
@@ -81,7 +82,7 @@ export function RecentProjects({
 
                 <button
                   className="p-1 rounded-full hover:bg-accent/10 ml-1"
-                  onClick={() => deleteProject(project.id, false)}
+                  onClick={() => removeProject(project.id)}
                   title="Remove from recent projects"
                 >
                   <Trash2 className="h-4 w-4" />

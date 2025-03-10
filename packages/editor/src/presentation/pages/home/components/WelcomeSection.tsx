@@ -1,13 +1,32 @@
 import React from 'react';
-import { FileText, FolderPlus, Import, ChevronRight, Sparkles } from 'lucide-react';
+import { FileText, FolderPlus, Import, Sparkles } from 'lucide-react';
 import { useProjectActions } from '@/application/hooks/project/useProjectActions';
+import { useDialogs } from '@/presentation/hooks/useDialogs';
+import { QuickLinkCard } from './QuickLinkCard';
 
 interface WelcomeSectionProps {
   onCreateProject: () => void;
 }
 
 export function WelcomeSection({ onCreateProject }: WelcomeSectionProps) {
-  const { importProject } = useProjectActions();
+  const { loadProject } = useProjectActions();
+  const { showOpenDialog } = useDialogs();
+
+  const handleImportProject = async () => {
+    // Show file selection dialog
+    const filePath = await showOpenDialog({
+      title: 'Open Project',
+      filters: [
+        { name: 'HedgeWright Level', extensions: ['aalevel'] }
+      ],
+      properties: ['openFile']
+    });
+
+    if (filePath && filePath.length > 0) {
+      // If user selected a file, load it
+      await loadProject(filePath[0]);
+    }
+  };
 
   return (
     <div className="relative">
@@ -47,7 +66,7 @@ export function WelcomeSection({ onCreateProject }: WelcomeSectionProps) {
               </button>
               
               <button
-                onClick={importProject}
+                onClick={handleImportProject}
                 className="inline-flex items-center px-5 py-2.5 bg-secondary text-secondary-foreground rounded-md shadow-sm hover:bg-secondary/90 transition-colors"
               >
                 <Import className="mr-2 h-5 w-5" />
@@ -82,31 +101,6 @@ export function WelcomeSection({ onCreateProject }: WelcomeSectionProps) {
             icon={<FileText className="h-5 w-5" />}
           />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function QuickLinkCard({ 
-  title, 
-  description, 
-  icon 
-}: { 
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="group p-4 rounded-lg border border-border/50 bg-card/50 hover:bg-accent/5 transition-colors cursor-pointer">
-      <div className="flex items-start">
-        <div className="p-2 rounded-md bg-primary/10 text-primary">
-          {icon}
-        </div>
-        <div className="ml-4 flex-1">
-          <h3 className="font-medium group-hover:text-primary transition-colors">{title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
-        </div>
-        <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
       </div>
     </div>
   );

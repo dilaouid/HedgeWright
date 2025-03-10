@@ -26,7 +26,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  const [isRendered, setIsRendered] = useState(false);
+  const [, setIsRendered] = useState(false);
 
   // Handle keyboard events (Escape and Enter)
   useEffect(() => {

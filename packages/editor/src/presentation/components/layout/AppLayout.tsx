@@ -1,6 +1,7 @@
+/* eslint-disable react/react-in-jsx-scope */
 import { useState } from 'react';
 import { Outlet } from '@tanstack/react-router';
-import { Sidebar } from './Sidebar';
+import { Sidebar } from '../../layouts/Sidebar';
 import { HeaderBar } from './HeaderBar';
 import { Toaster } from 'sonner';
 import { useProjectStore } from '@/application/state/project/projectStore';

@@ -1,4 +1,4 @@
-interface ModuleCardProps {
+export interface ModuleCardProps {
     name: string;
     icon: React.ReactNode;
     description: string;

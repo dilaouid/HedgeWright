@@ -1,30 +1,46 @@
-import { useNavigate } from "@tanstack/react-router";
+import React from 'react';
+import { motion } from 'framer-motion';
+import { useRouter } from '@tanstack/react-router';
+
+interface ModuleCardProps {
+  name: string;
+  icon: React.ReactNode;
+  description: string;
+  path: string;
+  count: number;
+}
 
 export function ModuleCard({ name, icon, description, path, count }: ModuleCardProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
 
-  const handleClick = () => {
-    navigate({ to: path });
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.navigate({ to: path });
   };
 
   return (
-    <div
-      className="group bg-card border border-border/30 rounded-lg p-6 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="card-ace relative overflow-hidden p-5 bg-gradient-to-br from-blue-900 to-blue-950 cursor-pointer"
       onClick={handleClick}
     >
-      <div className="flex items-start justify-between">
-        <div className="p-3 bg-primary/10 rounded-md text-primary">{icon}</div>
-        <div className="bg-accent/10 rounded-full w-8 h-8 flex items-center justify-center">
-          <span className="text-sm font-medium">{count}</span>
+      {/* Count badge */}
+      <div className="absolute top-3 right-3 bg-blue-800 text-blue-100 px-2 py-0.5 text-sm font-semibold rounded-md">
+        {count}
+      </div>
+      
+      <div className="flex flex-col">
+        <div className="mb-3 text-blue-300">
+          {icon}
         </div>
+        <h3 className="text-lg font-ace text-white mb-1">{name}</h3>
+        <p className="text-sm text-blue-200">{description}</p>
       </div>
-      <h3 className="text-xl font-semibold mt-4 group-hover:text-primary transition-colors">
-        {name}
-      </h3>
-      <p className="mt-2 text-muted-foreground">{description}</p>
-      <div className="mt-4 text-sm text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-        Open {name} →
-      </div>
-    </div>
+      
+      {/* Hover effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/0 to-yellow-400/20 opacity-0 hover:opacity-100 transition-opacity pointer-events-none"></div>
+    </motion.div>
   );
 }

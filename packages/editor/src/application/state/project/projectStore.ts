@@ -1,3 +1,5 @@
+// packages\editor\src\application\state\project\projectStore.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
@@ -50,8 +52,46 @@ export interface TimelineData {
 export interface ProjectVariable {
     id: string;
     name: string;
-    defaultValue: boolean;
+    numericId: number;
+    initialValue: boolean;
     description?: string;
+}
+
+export interface Asset {
+    id: string;
+    name: string;
+    type: string;
+    path: string;
+    metadata?: Record<string, any>;
+}
+
+export interface Character {
+    id: string;
+    name: string;
+    profileId?: string;
+    states?: CharacterState[];
+    metadata?: Record<string, any>;
+}
+
+export interface CharacterState {
+    id: string;
+    name: string;
+    imageId?: string;
+    animations?: {
+        idle?: string;
+        talking?: string;
+        special?: string;
+    };
+    metadata?: Record<string, any>;
+}
+
+export interface Music {
+    id: string;
+    name: string;
+    path: string;
+    type: string; // bgm, sfx, voice, etc.
+    loop?: boolean;
+    metadata?: Record<string, any>;
 }
 
 export interface ProjectData {
@@ -67,6 +107,10 @@ export interface ProjectData {
     events: string[]; // Array of event IDs
     evidence: string[]; // Array of evidence IDs
     profiles: string[]; // Array of profile IDs
+    assets: Asset[]; // Array of assets
+    music: Music[]; // Array of music/sound files
+    characters: Character[]; // Array of characters
+    backgrounds: string[]; // Array of background IDs
     variables: ProjectVariable[];
     timeline: TimelineData;
     settings: ProjectSettings;
@@ -87,6 +131,34 @@ interface ProjectState {
     markDirty: (isDirty: boolean) => void;
 }
 
+// Create normalized structure for missing fields
+const normalizeProject = (project: Partial<ProjectData>): ProjectData => {
+    return {
+        ...project,
+        assets: project.assets || [],
+        music: project.music || [],
+        characters: project.characters || [],
+        backgrounds: project.backgrounds || [],
+        // Ensure all required arrays exist
+        scenes: project.scenes || [],
+        investigations: project.investigations || [],
+        dialogues: project.dialogues || [],
+        crossExaminations: project.crossExaminations || [],
+        messages: project.messages || [],
+        events: project.events || [],
+        evidence: project.evidence || [],
+        profiles: project.profiles || [],
+        variables: project.variables || [],
+        timeline: project.timeline || { nodes: [], connections: [] },
+        settings: project.settings || {
+            gameTitle: project.name || 'New Project',
+            author: '',
+            version: '1.0.0',
+            resolution: { width: 1280, height: 720 }
+        }
+    } as ProjectData;
+};
+
 export const useProjectStore = create<ProjectState>()(
     immer((set) => ({
         currentProject: null,
@@ -95,7 +167,7 @@ export const useProjectStore = create<ProjectState>()(
         error: null,
 
         setProject: (project) => set({
-            currentProject: project,
+            currentProject: normalizeProject(project),
             isDirty: false,
             error: null
         }),

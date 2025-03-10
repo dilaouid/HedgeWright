@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { RouterProvider } from '@tanstack/react-router';
 import { router } from './routes';
 
@@ -15,6 +15,26 @@ import '../styles/globals.css';
  * Sets up the router and global application context
  */
 export function App() {
+  const [isRouterReady, setIsRouterReady] = useState(false);
+
+  useEffect(() => {
+    // Initialize the router
+    const initRouter = async () => {
+      await router.load();
+      setIsRouterReady(true);
+    };
+
+    initRouter();
+  }, []);
+
+  if (!isRouterReady) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <div className="text-white text-2xl">Loading HedgeWright Editor...</div>
+      </div>
+    );
+  }
+
   return (
     <ThemeProvider>
       <ToastProvider>

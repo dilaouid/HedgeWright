@@ -48,15 +48,20 @@ export async function createNewCase(caseData: NewCaseData): Promise<Project> {
         dialogues: [],
         crossExaminations: [],
         messages: [],
-        events: []
+        events: [],
+        assets: [],
+        music: [],
+        characters: [],
+        backgrounds: []
     };
 
     // Initialiser également quelques variables de base que tous les niveaux doivent avoir
     projectData.variables.push(
         {
             id: uuidv4(),
+            numericId: 0,
             name: 'hasSeenIntro',
-            defaultValue: false,
+            initialValue: false,
             description: 'Si le joueur a vu l\'introduction'
         }
     );

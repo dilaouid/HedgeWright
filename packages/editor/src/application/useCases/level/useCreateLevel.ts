@@ -44,7 +44,11 @@ export function useCreateLevel() {
             dialogues: [],
             crossExaminations: [],
             messages: [],
-            events: []
+            events: [],
+            assets: [],
+            music: [],
+            characters: [],
+            backgrounds: []
         };
 
         // Initialize some basic variables that all levels must have
@@ -52,7 +56,8 @@ export function useCreateLevel() {
             {
                 id: uuidv4(),
                 name: 'hasSeenIntro',
-                defaultValue: false,
+                numericId: 0,
+                initialValue: false,
                 description: 'If player has seen the introduction'
             }
         );

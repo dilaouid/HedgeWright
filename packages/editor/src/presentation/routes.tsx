@@ -2,6 +2,7 @@ import {
   createRouter,
   createRoute,
   createRootRoute,
+  redirect,
 } from '@tanstack/react-router';
 
 import { HomePage } from './pages/home';
@@ -13,13 +14,39 @@ import { EvidencePage } from './pages/evidence';
 import { TimelinePage } from './pages/timeline';
 import { SettingsPage } from './pages/settings';
 import { PreviewPage } from './pages/preview'; */
+import { CharactersPage } from './pages/characters';
+import { SwitchesPage } from './pages/switches';
 import { NotFoundPage } from './pages/404';
 
 import { AppLayout } from './components/layout/AppLayout';
+import { useProjectStore } from '@/application/state/project/projectStore';
 
 // Root route with layout wrapper
 const rootRoute = createRootRoute({
   component: AppLayout,
+  // Add loader to handle redirects based on project state
+  beforeLoad: async ({ location }) => {
+    // Skip for explicit routes like home and 404
+    if (location.pathname === '/' || location.pathname === '/404') {
+      return;
+    }
+
+    // Get current project from store
+    const { currentProject } = useProjectStore.getState();
+    
+    // If trying to access editor pages without a project, redirect to home
+    if (
+      !currentProject && 
+      ['/editor', '/scenes', '/dialogue', '/cross-examination', '/evidence', '/timeline'].some(
+        route => location.pathname.startsWith(route)
+      )
+    ) {
+      throw redirect({
+        to: '/',
+        search: { redirected: 'true' },
+      });
+    }
+  },
 });
 
 // Home page route
@@ -106,6 +133,20 @@ const previewRoute = createRoute({
   component: PreviewPage,
 }); */
 
+// Characters route
+const charactersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/characters',
+  component: CharactersPage,
+});
+
+// Switches route
+const switchesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/switches',
+  component: SwitchesPage,
+});
+
 // Catch-all 404 route
 const notFoundRoute = createRoute({
   getParentRoute: () => rootRoute,
@@ -125,8 +166,14 @@ export const router = createRouter({
     timelineRoute,
     settingsRoute,
     previewRoute, */
+    charactersRoute,
+    switchesRoute,
     notFoundRoute,
   ]),
+  // Make sure we handle path-based navigation properly in Electron
+  basepath: '', // Empty basepath to ensure proper path resolution
+  defaultPreload: 'intent', // Preload routes on hover/focus for faster navigation
+  defaultPreloadDelay: 100, // Small delay before preloading
 });
 
 // Type declarations for type safety across the app

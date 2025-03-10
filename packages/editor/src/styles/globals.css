@@ -8,12 +8,39 @@
 
 /* Ace Attorney Font */
 @font-face {
-  font-family: 'Ace Attorney';
+  font-family: 'AceAttorney';
   src: url('/assets/fonts/AceAttorney.woff2') format('woff2'),
        url('/assets/fonts/AceAttorney.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
+}
+
+.font-ace {
+  font-family: 'AceAttorney', 'Arial', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+.shadow-text {
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* Custom scrollbar for Ace Attorney style */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.3);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.5);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: rgba(96, 165, 250, 0.8);
 }
 
 :root {

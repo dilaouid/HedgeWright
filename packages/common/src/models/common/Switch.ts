@@ -6,25 +6,22 @@ import { v4 as uuidv4 } from 'uuid';
 
 export class Switch {
     readonly uuid: string;
-    readonly customId: string;
-    readonly name: string;
     readonly numericId: number;
+    readonly name: string;
     readonly description: string | null;
     readonly initialValue: boolean;
     readonly metadata: Record<string, any>;
 
     constructor(
-        customId: string,
-        name: string,
         numericId: number,
+        name: string,
         description: string | null = null,
         initialValue: boolean = false,
         metadata: Record<string, any> = {}
     ) {
         this.uuid = uuidv4();
-        this.customId = customId;
-        this.name = name;
         this.numericId = numericId;
+        this.name = name;
         this.description = description;
         this.initialValue = initialValue;
         this.metadata = metadata;
@@ -35,9 +32,8 @@ export class Switch {
      */
     update(updates: Partial<Omit<Switch, 'uuid'>>): Switch {
         return new Switch(
-            updates.customId ?? this.customId,
-            updates.name ?? this.name,
             updates.numericId ?? this.numericId,
+            updates.name ?? this.name,
             updates.description ?? this.description,
             updates.initialValue ?? this.initialValue,
             updates.metadata ?? this.metadata
@@ -64,9 +60,8 @@ export class Switch {
      */
     static fromJSON(json: any): Switch {
         return new Switch(
-            json.customId,
-            json.name,
             json.numericId,
+            json.name,
             json.description,
             json.initialValue,
             json.metadata || {}
