@@ -1,4 +1,3 @@
-// packages\editor\src\presentation\pages\characters\components\CharacterForm.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';

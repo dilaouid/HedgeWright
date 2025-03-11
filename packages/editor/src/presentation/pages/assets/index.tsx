@@ -37,14 +37,14 @@ export function AssetsPage() {
     currentProject?.assets?.filter((a) => a.category === 'bubble')?.length || 0;
   const musicCount = currentProject?.music?.length || 0;
   const spriteCount =
-    currentProject?.assets?.filter((a) => a.category === 'sprite')?.length || 0;
+    currentProject?.assets?.filter((a) => a.category === 'character')?.length || 0;
   const backgroundCount =
     currentProject?.assets?.filter((a) => a.category === 'background')
       ?.length || 0;
   const evidenceCount = currentProject?.evidence?.length || 0;
   const profileCount = currentProject?.profiles?.length || 0;
   const specialAnimCount =
-    currentProject?.assets?.filter((a) => a.category === 'special')?.length ||
+    currentProject?.assets?.filter((a) => a.category === 'effect')?.length ||
     0;
 
   if (!currentProject) {

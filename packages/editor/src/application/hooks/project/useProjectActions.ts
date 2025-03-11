@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import path from 'path-browserify';
 import { nanoid } from 'nanoid';
@@ -7,6 +8,7 @@ import { useDialogs } from '@/presentation/hooks/useDialogs';
 import { useToast } from '@/presentation/hooks/useToast';
 import { useRecentProjectsStore } from '@/application/state/project/recentProjectsStore';
 import { useFileSystemService } from '@/infrastructure/filesystem/services/useFileSystemService';
+import { useFileSystemWatcher } from '@/application/hooks/project/useFileSystemWatcher';
 
 // Define our project folder structure
 const PROJECT_FOLDERS = [
@@ -42,7 +44,9 @@ export function useProjectActions() {
     const { addProject, removeProject, updateProject } = useRecentProjectsStore();
     const { setProject, clearProject } = useProjectStore();
     const fileSystem = useFileSystemService();
-    const { showSaveDialog, showOpenDialog, showConfirmDialog } = useDialogs();
+    const { showSaveDialog } = useDialogs();
+    const { scanExistingAssets, isReady } = useFileSystemWatcher();
+
     const toast = useToast();
 
     /**
@@ -52,13 +56,13 @@ export function useProjectActions() {
         try {
             // Create main project folder
             await fileSystem.createDirectory(projectFolderPath);
-            
+
             // Create all subfolders
             for (const folder of PROJECT_FOLDERS) {
                 const folderPath = path.join(projectFolderPath, folder);
                 await fileSystem.createDirectory(folderPath);
             }
-            
+
             return true;
         } catch (error) {
             console.error('Failed to create project folders:', error);
@@ -75,10 +79,10 @@ export function useProjectActions() {
 
             // Generate a project ID
             const projectId = nanoid();
-            
+
             // Allow the user to select where to save the project folder
             let projectFolderPath = options?.path;
-            
+
             if (!projectFolderPath) {
                 // First let the user choose a folder location
                 const folderPath = await showSaveDialog({
@@ -93,17 +97,17 @@ export function useProjectActions() {
                     setLoading(false);
                     return null;
                 }
-                
+
                 projectFolderPath = folderPath;
             }
-            
+
             // Get project name from folder name if not specified
             const projectName = options?.name || path.basename(projectFolderPath);
             const now = new Date().toISOString();
-            
+
             // Create the folder structure
             await createProjectFolders(projectFolderPath);
-            
+
             // Define the path for the main project file inside the folder
             const projectFilePath = path.join(projectFolderPath, `${projectName}.aalevel`);
 
@@ -211,9 +215,9 @@ Place your assets in the corresponding folders and reference them in the editor.
     const loadProject = async (projectIdOrPath: string) => {
         try {
             setLoading(true);
-
+    
             let projectPath: string;
-
+    
             // Check if we're loading by ID or by path
             if (projectIdOrPath.endsWith('.aalevel')) {
                 // It's a path
@@ -222,20 +226,20 @@ Place your assets in the corresponding folders and reference them in the editor.
                 // It's an ID, get the project from recent projects
                 const { projects } = useRecentProjectsStore.getState();
                 const project = projects.find((p: Project) => p.id === projectIdOrPath);
-
+    
                 if (!project) {
                     throw new Error(`Project with ID ${projectIdOrPath} not found`);
                 }
-
+    
                 projectPath = project.path;
             }
-
+    
             // Check if file exists
             const exists = await fileSystem.fileExists(projectPath);
             if (!exists) {
                 throw new Error(`Project file not found at ${projectPath}`);
             }
-
+    
             // Load project data
             const projectData = await fileSystem.readJsonFile(projectPath) as {
                 id: string;
@@ -244,41 +248,80 @@ Place your assets in the corresponding folders and reference them in the editor.
                 createdAt?: string;
                 [key: string]: unknown;
             };
-
+    
             // Validate project data
             if (!projectData.id || !projectData.name) {
                 throw new Error('Invalid project file format');
             }
-
+    
             // Determine folder path - either from the project data or from the file location
             // Make sure folderPath is always defined since the recentProjectsStore expects it
             const folderPath = projectData.projectFolderPath || path.dirname(projectPath);
-
+            
+            // Ensure projectFolderPath is set in the project data
+            projectData.projectFolderPath = folderPath;
+    
+            // Resolve relative paths to absolute paths for assets and music
+            const resolvedProjectData = resolveProjectPaths(projectData);
+    
             // Update project in recent projects
             const now = new Date().toISOString();
             const projectToUpdate: Project = {
                 id: projectData.id,
                 name: projectData.name,
                 path: projectPath,
-                folderPath, // This is now guaranteed to be a string
+                folderPath,
                 createdAt: projectData.createdAt || now,
                 lastModified: now,
             };
-
+    
             // Update stores
             addProject(projectToUpdate); // This will move it to the top of recent projects
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setProject(projectData as any); // Type assertion needed due to potential missing fields in loaded project
-
+            setProject(resolvedProjectData as any); // Now using the resolved project data
+    
             toast.success(`Project "${projectData.name}" loaded successfully`);
+            if (isReady) {
+                await scanExistingAssets(folderPath); // Use folderPath instead of projectPath
+            }
+    
             setLoading(false);
-
-            return projectData;
+    
+            return resolvedProjectData; // Return the resolved project data
         } catch (error) {
             setLoading(false);
             toast.error(`Failed to load project: ${error instanceof Error ? error.message : 'Unknown error'}`);
             throw error;
         }
+    };
+    
+    // Helper function to resolve relative paths in the project
+    const resolveProjectPaths = (project: any) => {
+        if (!project || !project.projectFolderPath) return project;
+        
+        const result = { ...project };
+        
+        // Resolve paths for assets
+        if (Array.isArray(result.assets)) {
+            result.assets = result.assets.map((asset: any) => ({
+                ...asset,
+                path: asset.relativePath 
+                    ? path.join(project.projectFolderPath, asset.relativePath.replace(/\\/g, path.sep))
+                    : asset.path
+            }));
+        }
+        
+        // Resolve paths for music
+        if (Array.isArray(result.music)) {
+            result.music = result.music.map((music: any) => ({
+                ...music,
+                path: music.relativePath
+                    ? path.join(project.projectFolderPath, music.relativePath.replace(/\\/g, path.sep))
+                    : music.path
+            }));
+        }
+        
+        return result;
     };
 
     /**

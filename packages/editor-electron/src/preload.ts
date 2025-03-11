@@ -10,12 +10,14 @@ contextBridge.exposeInMainWorld('electron', {
       return ipcRenderer.invoke(channel, ...args);
     },
 
-
     on: (channel: string, func: (...args: any[]) => void) => {
       const validChannels = [
         'file-saved',
         'file-opened',
-        'game-exported'
+        'game-exported',
+        'asset:added',
+        'asset:removed',
+        'asset:error'
       ];
       if (validChannels.includes(channel)) {
         // Deliberately strip event as it includes `sender` 
@@ -26,7 +28,10 @@ contextBridge.exposeInMainWorld('electron', {
       const validChannels = [
         'file-saved',
         'file-opened',
-        'game-exported'
+        'game-exported',
+        'asset:added',
+        'asset:removed',
+        'asset:error'
       ];
       if (validChannels.includes(channel)) {
         // Deliberately strip event as it includes `sender` 

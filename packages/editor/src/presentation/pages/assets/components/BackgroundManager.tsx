@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   Search,
   Trash2,
   Edit,
-  Eye,
   Check,
-  X,
   Star,
 } from 'lucide-react';
 import {
@@ -35,9 +32,6 @@ export function BackgroundManager() {
   const [backgroundCategories, setBackgroundCategories] = useState<
     BackgroundCategory[]
   >([]);
-  const [previewBackground, setPreviewBackground] = useState<Asset | null>(
-    null
-  );
   const [editingBackground, setEditingBackground] = useState<Asset | null>(
     null
   );
@@ -165,13 +159,6 @@ export function BackgroundManager() {
     setEditingBackground(null);
   };
 
-  // Preview a background in full-screen
-  const previewBg = (background: Asset) => {
-    setPreviewBackground(background);
-
-    console.log(previewBackground);
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -243,16 +230,6 @@ export function BackgroundManager() {
                           Used in scenes
                         </div>
                       )}
-
-                      {/* Preview button */}
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="absolute bottom-2 right-2 h-8 w-8 bg-blue-950/90 border-blue-800 text-blue-300 hover:bg-blue-900 hover:text-white"
-                        onClick={() => previewBg(bg)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
                     </div>
 
                     <div className="p-3">
@@ -405,67 +382,6 @@ export function BackgroundManager() {
         </DialogContent>
       </Dialog>
 
-      {/* Background Preview Modal */}
-      {previewBackground && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-blue-950/90 flex items-center justify-center p-4"
-          onClick={() => setPreviewBackground(null)}
-        >
-          <div
-            className="relative bg-blue-900/30 p-1 rounded-lg border-2 border-blue-700 max-w-5xl w-full max-h-[90vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="absolute top-3 right-3 z-10 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 bg-blue-950/90 border-blue-800 text-blue-300 hover:bg-blue-900 hover:text-white flex items-center gap-1"
-                onClick={() => openEditModal(previewBackground)}
-              >
-                <Edit className="h-3.5 w-3.5" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 bg-blue-950/90 border-blue-800 text-red-400 hover:bg-red-900/30 hover:text-red-300"
-                onClick={() => setPreviewBackground(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="max-h-[calc(90vh-2rem)] overflow-auto">
-              <div className="p-4 pb-2">
-                <h3 className="text-xl font-ace text-white">
-                  {previewBackground.name}
-                </h3>
-                {previewBackground.metadata?.location && (
-                  <p className="text-blue-300 text-sm mt-1">
-                    Location: {previewBackground.metadata.location as string}
-                  </p>
-                )}
-                {previewBackground.metadata?.description && (
-                  <p className="text-blue-200 mt-2">
-                    {previewBackground.metadata.description as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="p-4 pt-2 bg-black/30">
-                <img
-                  src={previewBackground.path}
-                  alt={previewBackground.name}
-                  className="max-w-full mx-auto"
-                />
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { registerFileHandlers } from './ipc/handlers/fileHandlers';
 import { registerAssetHandlers } from './ipc/handlers/assetHandlers';
+import { registerFileWatcherHandlers } from './ipc/handlers/fileWatcherHandler';
 
 // Determine if we're in development mode
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
@@ -169,6 +170,7 @@ app.whenReady().then(() => {
   console.log('Registering IPC handlers...');
   registerFileHandlers();
   registerAssetHandlers();
+  registerFileWatcherHandlers(); 
   
   createWindow();
 });

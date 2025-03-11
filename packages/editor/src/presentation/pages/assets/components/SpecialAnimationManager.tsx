@@ -1,15 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import {
   Search,
   Sparkles,
   Trash2,
   Edit,
-  Eye,
   Check,
-  X,
-  PlaySquare,
-  StopCircle,
   Lightbulb,
   Film,
 } from 'lucide-react';
@@ -41,7 +36,6 @@ export function SpecialAnimationManager() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAnimation, setEditingAnimation] = useState<Asset | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPlayingPreview, setIsPlayingPreview] = useState(false);
 
   // Extract special animations from project assets
   useEffect(() => {
@@ -136,17 +130,6 @@ export function SpecialAnimationManager() {
     setEditingAnimation(null);
   };
 
-  // Preview animation
-  const togglePreview = (animation: Asset) => {
-    if (previewedAnimation?.id === animation.id) {
-      setPreviewedAnimation(null);
-      setIsPlayingPreview(false);
-    } else {
-      setPreviewedAnimation(animation);
-      setIsPlayingPreview(true);
-    }
-  };
-
   // Get animation category display name
   const getCategoryName = (category: string) => {
     switch (category) {
@@ -239,84 +222,74 @@ export function SpecialAnimationManager() {
 
       {/* Animations by category */}
       {Object.keys(animationsByCategory).length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           {Object.entries(animationsByCategory).map(
             ([category, animations]) => (
-              <div key={category} className="space-y-3">
-                <h3 className="text-lg font-ace text-blue-200 flex items-center">
-                  {getCategoryIcon(category)}
-                  <span className="ml-2">
-                    {getCategoryName(category).toUpperCase()}
-                  </span>
-                  <span className="ml-2 bg-blue-900/50 text-xs px-2 py-0.5 rounded text-blue-300">
-                    {animations.length}
-                  </span>
-                </h3>
+              <div key={category} className="space-y-2">
+            <h3 className="text-lg font-ace text-blue-200 flex items-center">
+              {getCategoryIcon(category)}
+              <span className="ml-2">
+                {getCategoryName(category).toUpperCase()}
+              </span>
+              <span className="ml-2 bg-blue-900/50 text-xs px-2 py-0.5 rounded text-blue-300">
+                {animations.length}
+              </span>
+            </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {animations.map((animation) => (
-                    <Card
-                      key={animation.id}
-                      className="bg-blue-950 border-blue-800 overflow-hidden flex flex-col"
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1">
+              {animations.map((animation) => (
+                <Card
+                  key={animation.id}
+                  className="bg-blue-950 border-blue-800 overflow-hidden flex flex-col h-[240px] max-w-[220px]"
+                >
+                  <div className="relative h-[160px] bg-blue-900/30 flex items-center justify-center overflow-hidden border-b border-blue-800/50">
+                <img
+                  src={animation.path}
+                  alt={animation.name}
+                  className="max-w-[240px] max-h-[160px] object-contain"
+                />
+                  </div>
+
+                  <div className="p-2 flex-1 flex flex-col">
+                <div className="flex justify-between items-start">
+                  <h4 className="text-white font-medium truncate">
+                    {animation.name}
+                  </h4>
+                  <div className="flex gap-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-blue-400 hover:text-blue-300"
+                      onClick={() => openEditModal(animation)}
                     >
-                      <div className="relative aspect-square bg-blue-900/30 flex items-center justify-center overflow-hidden">
-                        <img
-                          src={animation.path}
-                          alt={animation.name}
-                          className="max-w-full max-h-full object-contain"
-                        />
-
-                        {/* Preview button */}
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="absolute bottom-2 right-2 h-8 w-8 bg-blue-950/90 border-blue-800 text-blue-300 hover:bg-blue-900 hover:text-white"
-                          onClick={() => togglePreview(animation)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <div className="p-3 flex-1 flex flex-col">
-                        <div className="flex justify-between items-start">
-                          <h4 className="text-white font-medium truncate">
-                            {animation.name}
-                          </h4>
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-blue-400 hover:text-blue-300"
-                              onClick={() => openEditModal(animation)}
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-red-400 hover:text-red-300"
-                              onClick={() => deleteAnimation(animation.id)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-
-                        {animation.metadata?.description && (
-                          <p className="text-xs text-blue-300 mt-1 line-clamp-2 flex-1">
-                            {animation.metadata.description as string}
-                          </p>
-                        )}
-
-                        {animation.metadata?.duration && (
-                          <div className="text-xs text-blue-400 mt-1">
-                            Duration: {animation.metadata.duration as number}ms
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-red-400 hover:text-red-300"
+                      onClick={() => deleteAnimation(animation.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
+
+                {animation.metadata?.description && (
+                  <p className="text-xs text-blue-300 mt-1 line-clamp-2 flex-1">
+                    {animation.metadata.description as string}
+                  </p>
+                )}
+
+                {animation.metadata?.duration && (
+                  <div className="text-xs text-blue-400 mt-1">
+                    Duration: {animation.metadata.duration as number}ms
+                  </div>
+                )}
+                  </div>
+                </Card>
+              ))}
+            </div>
               </div>
             )
           )}
@@ -330,99 +303,6 @@ export function SpecialAnimationManager() {
               : 'Import animations using the Import Assets button above'}
           </p>
         </div>
-      )}
-
-      {/* Animation Preview Modal */}
-      {previewedAnimation && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-blue-950/90 flex items-center justify-center p-4"
-          onClick={() => setPreviewedAnimation(null)}
-        >
-          <div
-            className="relative bg-blue-900/30 p-1 rounded-lg border-2 border-blue-700 max-w-2xl max-h-[90vh] overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="absolute top-3 right-3 z-10 flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 bg-blue-950/90 border-blue-800 text-blue-300 hover:bg-blue-900 hover:text-white flex items-center gap-1"
-                onClick={() => {
-                  setIsPlayingPreview(!isPlayingPreview);
-                }}
-              >
-                {isPlayingPreview ? (
-                  <>
-                    <StopCircle className="h-3.5 w-3.5" />
-                    Pause
-                  </>
-                ) : (
-                  <>
-                    <PlaySquare className="h-3.5 w-3.5" />
-                    Play
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 bg-blue-950/90 border-blue-800 text-blue-300 hover:bg-blue-900 hover:text-white flex items-center gap-1"
-                onClick={() => openEditModal(previewedAnimation)}
-              >
-                <Edit className="h-3.5 w-3.5" />
-                Edit
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-8 w-8 bg-blue-950/90 border-blue-800 text-red-400 hover:bg-red-900/30 hover:text-red-300"
-                onClick={() => setPreviewedAnimation(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="max-h-[calc(90vh-2rem)] overflow-auto">
-              <div className="p-4 pb-2">
-                <h3 className="text-xl font-ace text-white mb-1">
-                  {previewedAnimation.name}
-                </h3>
-                {previewedAnimation.category && (
-                  <div className="flex items-center gap-1 text-blue-300 text-sm">
-                    {getCategoryIcon(previewedAnimation.category)}
-                    <span>{getCategoryName(previewedAnimation.category)}</span>
-                  </div>
-                )}
-                {previewedAnimation.metadata?.description && (
-                  <p className="text-blue-200 mt-2">
-                    {previewedAnimation.metadata.description as string}
-                  </p>
-                )}
-              </div>
-
-              <div className="p-4 pt-2 bg-black/30 flex items-center justify-center">
-                <img
-                  src={previewedAnimation.path}
-                  alt={previewedAnimation.name}
-                  className="max-w-full max-h-[400px] object-contain"
-                  style={{
-                    animationPlayState: isPlayingPreview ? 'running' : 'paused',
-                  }}
-                />
-              </div>
-
-              {previewedAnimation.metadata?.duration && (
-                <div className="px-4 py-2 text-sm text-blue-300">
-                  Animation Duration:{' '}
-                  {previewedAnimation.metadata.duration as number}ms
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
       )}
 
       {/* Edit Animation Modal */}

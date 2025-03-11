@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { nanoid } from 'nanoid';
+import React, { useState, useEffect, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { motion } from 'framer-motion';
 import { Upload, X, FileCheck, AlertTriangle } from 'lucide-react';
 import {
@@ -45,6 +45,7 @@ export function ImportAssetModal({
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ipcService = useIpcService();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -103,63 +104,54 @@ export function ImportAssetModal({
     setDragOver(false);
 
     if (e.dataTransfer.files) {
-      const newFiles = Array.from(e.dataTransfer.files);
-      const validFiles = newFiles.filter((file) => {
-        const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
-        return getAllowedTypes().includes(fileExt);
-      });
-
-      if (validFiles.length !== newFiles.length) {
-        setError(
-          `Some files were filtered out because they are not supported for ${category}`
-        );
-      }
-
-      // Add new files and initialize their names
-      setFiles([...files, ...validFiles]);
-      const newAssetNames = { ...assetNames };
-      const newAssetTypes = { ...assetTypes };
-
-      validFiles.forEach((file) => {
-        // Use the file name without extension as the default asset name
-        const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
-        newAssetNames[file.name] = baseName;
-
-        // Set default asset type based on category and file extension
-        const fileExt = file.name.split('.').pop()?.toLowerCase();
-        if (category === 'music') {
-          newAssetTypes[file.name] = fileExt === 'mp3' ? 'bgm' : 'sfx';
-        } else {
-          newAssetTypes[file.name] =
-            category === 'evidence' ? 'evidence' : category.slice(0, -1); // Remove trailing 's'
-        }
-      });
-
-      setAssetNames(newAssetNames);
-      setAssetTypes(newAssetTypes);
+      addFiles(Array.from(e.dataTransfer.files));
     }
   };
 
+  const handleBrowseClick = () => {
+    // Programmatically click the hidden file input when "browse" is clicked
+    fileInputRef.current?.click();
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      const validFiles = newFiles.filter((file) => {
-        const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
-        return getAllowedTypes().includes(fileExt);
-      });
+    if (e.target.files && e.target.files.length > 0) {
+      addFiles(Array.from(e.target.files));
 
-      if (validFiles.length !== newFiles.length) {
-        setError(
-          `Some files were filtered out because they are not supported for ${category}`
-        );
-      }
+      // Clear the input value so the same file can be selected again
+      e.target.value = '';
+    }
+  };
 
-      // Add new files and initialize their names
-      setFiles([...files, ...validFiles]);
-      const newAssetNames = { ...assetNames };
-      const newAssetTypes = { ...assetTypes };
+  // Centralized function to add files to prevent code duplication
+  const addFiles = (newFiles: File[]) => {
+    const validFiles = newFiles.filter((file) => {
+      const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
+      return getAllowedTypes().includes(fileExt);
+    });
 
-      validFiles.forEach((file) => {
+    if (validFiles.length !== newFiles.length) {
+      setError(
+        `Some files were filtered out because they are not supported for ${category}`
+      );
+    }
+
+    // Add new files and initialize their names
+    setFiles((prevFiles) => {
+      // Check for duplicate files by name
+      const existingNames = new Set(prevFiles.map((f) => f.name));
+      const uniqueNewFiles = validFiles.filter(
+        (file) => !existingNames.has(file.name)
+      );
+
+      return [...prevFiles, ...uniqueNewFiles];
+    });
+
+    const newAssetNames = { ...assetNames };
+    const newAssetTypes = { ...assetTypes };
+
+    validFiles.forEach((file) => {
+      // Only process if it's not already in the list
+      if (!newAssetNames[file.name]) {
         // Use the file name without extension as the default asset name
         const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
         newAssetNames[file.name] = baseName;
@@ -172,11 +164,11 @@ export function ImportAssetModal({
           newAssetTypes[file.name] =
             category === 'evidence' ? 'evidence' : category.slice(0, -1); // Remove trailing 's'
         }
-      });
+      }
+    });
 
-      setAssetNames(newAssetNames);
-      setAssetTypes(newAssetTypes);
-    }
+    setAssetNames(newAssetNames);
+    setAssetTypes(newAssetTypes);
   };
 
   const handleNameChange = (fileName: string, newName: string) => {
@@ -249,10 +241,12 @@ export function ImportAssetModal({
           targetFolder: targetFolder,
           projectPath: currentProject.projectFolderPath,
         });
+        const relativePath = savedPath.replace(/\//g, '\\');
+        const absolutePath = `${currentProject.projectFolderPath}\\${relativePath}`;
 
         // Update project store with the new asset
         updateProject((draft) => {
-          const assetId = nanoid();
+          const assetId = uuidv4(); // Use UUID instead of nanoid for properly formatted UUIDs
           const assetName = assetNames[file.name] || file.name;
 
           // For music files
@@ -265,9 +259,9 @@ export function ImportAssetModal({
             const musicAsset: Music = {
               id: assetId,
               name: assetName,
-              path: savedPath,
+              path: absolutePath,
               type: assetType,
-              relativePath: savedPath,
+              relativePath: relativePath,
               loop: assetType === 'bgm',
             };
             draft.music.push(musicAsset);
@@ -277,10 +271,14 @@ export function ImportAssetModal({
             const asset: Asset = {
               id: assetId,
               name: assetName,
-              type: fileExt || '',
-              path: savedPath,
-              relativePath: savedPath,
+              type: fileExt || 'image',
+              path: absolutePath,
+              relativePath: relativePath,
               category: assetType,
+              metadata: {
+                relativePath: relativePath,
+                category: assetType,
+              },
             };
             draft.assets.push(asset);
 
@@ -336,14 +334,21 @@ export function ImportAssetModal({
             <Upload className="w-12 h-12 text-blue-400" />
             <p className="text-blue-200">
               Drag and drop files here, or{' '}
-              <span className="text-yellow-400">browse</span>
+              <button
+                onClick={handleBrowseClick}
+                className="text-yellow-400 hover:text-yellow-300 hover:underline focus:outline-none"
+                type="button"
+              >
+                browse
+              </button>
             </p>
             <input
+              ref={fileInputRef}
               type="file"
               multiple
               accept={getAcceptString()}
               onChange={handleFileChange}
-              className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+              className="hidden" // Hide the input but make it accessible via the button
             />
           </div>
         </div>
@@ -389,6 +394,7 @@ export function ImportAssetModal({
                       onClick={() => removeFile(file.name)}
                       className="text-blue-400 hover:text-red-400 transition-colors"
                       disabled={importing}
+                      aria-label="Remove file"
                     >
                       <X className="w-5 h-5" />
                     </button>
@@ -505,6 +511,21 @@ export function ImportAssetModal({
                 </motion.div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Add more files button when files are already selected */}
+        {files.length > 0 && (
+          <div className="mt-4">
+            <Button
+              variant="outline"
+              className="border-blue-700 text-blue-200 hover:bg-blue-900 hover:text-white w-full flex items-center justify-center gap-2"
+              onClick={handleBrowseClick}
+              disabled={importing}
+            >
+              <Upload className="w-4 h-4" />
+              Add More Files
+            </Button>
           </div>
         )}
 

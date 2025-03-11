@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useProjectActions } from '@/application/hooks/project/useProjectActions';
 import { HeaderButton } from '../common/HeaderButton';
+import { FileSystemWatcherStatus } from '@/presentation/components/common/FileSystemWatcherStatus';
 
 interface HeaderBarProps {
   toggleSidebar: () => void;
@@ -139,6 +140,7 @@ export function HeaderBar({
           />
         </div>
       </div>
+      <FileSystemWatcherStatus />
     </header>
   );
 }

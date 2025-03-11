@@ -1,11 +1,11 @@
 // packages\editor\src\infrastructure\electron\services\useIpcService.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback } from 'react';
+import { useEffect, useState } from 'react';
 
 // Define the global window interface to include Electron's IPC renderer
 declare global {
     interface Window {
-        electron?: {
+        electron: {
             ipcRenderer: {
                 invoke: (channel: string, ...args: any[]) => Promise<any>;
                 on: (channel: string, callback: (...args: any[]) => void) => void;
@@ -16,85 +16,54 @@ declare global {
     }
 }
 
-// Create a mock IPC service for browser mode
-const browserIpcService = {
-    invoke: async (channel: string, ...args: any[]): Promise<any> => {
-        console.warn(`Browser mode: IPC channel '${channel}' called with:`, args);
-        
-        // For file dialogs, simulate returning null (cancelled)
-        if (channel.startsWith('dialog:')) {
-            return null;
-        }
-        
-        throw new Error('IPC renderer not available - are you running in Electron?');
+export interface IpcService {
+    invoke: (channel: string, ...args: unknown[]) => Promise<any>;
+    on: (channel: string, listener: (...args: any[]) => void) => void;
+    once: (channel: string, listener: (...args: any[]) => void) => void;
+    removeListener: (channel: string, listener: (...args: any[]) => void) => void;
+    isElectron: boolean;
+}
+
+const mockIpcService: IpcService = {
+    invoke: async (channel: string, ...args: unknown[]) => {
+        console.log(`Mock IPC invoke: ${channel}`, args);
+        return { success: false, message: 'Electron IPC not yet available' };
     },
-    on: (channel: string, callback: (...args: any[]) => void): void => {
-        console.warn(`Browser mode: IPC listener for '${channel}' registered`);
+    on: (channel: string, listener: (...args: any[]) => void) => {
+        console.log(`Mock IPC on: ${channel}`);
     },
-    once: (channel: string, callback: (...args: any[]) => void): void => {
-        console.warn(`Browser mode: IPC one-time listener for '${channel}' registered`);
+    once: (channel: string, listener: (...args: any[]) => void) => {
+        console.log(`Mock IPC once: ${channel}`);
     },
-    removeListener: (channel: string, callback: (...args: any[]) => void): void => {
-        console.warn(`Browser mode: IPC listener for '${channel}' removed`);
-    }
+    removeListener: (channel: string, listener: (...args: any[]) => void) => {
+        console.log(`Mock IPC removeListener: ${channel}`);
+    },
+    isElectron: false
 };
 
-export function useIpcService() {
-    // Check if we're running in Electron
-    const isElectron = useCallback(() => {
-        return window.electron !== undefined;
+export function useIpcService(): IpcService {
+    const [ipcService, setIpcService] = useState<IpcService>(mockIpcService); // Initialize with mock service
+
+    useEffect(() => {
+        // Check if electron is available in window context
+        if (window.electron?.ipcRenderer) {
+            const service: IpcService = {
+                invoke: (channel: string, ...args: unknown[]) =>
+                    window.electron.ipcRenderer.invoke(channel, ...args),
+                on: (channel: string, listener: (...args: any[]) => void) =>
+                    window.electron.ipcRenderer.on(channel, listener),
+                once: (channel: string, listener: (...args: any[]) => void) =>
+                    window.electron.ipcRenderer.once(channel, listener),
+                removeListener: (channel: string, listener: (...args: any[]) => void) =>
+                    window.electron.ipcRenderer.removeListener(channel, listener),
+                isElectron: true
+            };
+
+            setIpcService(service);
+        } else {
+            console.warn('Electron IPC renderer not available. Running in browser mode?');
+        }
     }, []);
 
-    /**
-     * Invoke an IPC method and get a response
-     */
-    const invoke = useCallback(async (channel: string, ...args: any[]): Promise<any> => {
-        if (isElectron()) {
-            console.log(`Invoking IPC channel: ${channel}`);
-            return window.electron!.ipcRenderer.invoke(channel, ...args);
-        }
-        
-        return browserIpcService.invoke(channel, ...args);
-    }, [isElectron]);
-
-    /**
-     * Listen for IPC events
-     */
-    const on = useCallback((channel: string, callback: (...args: any[]) => void): void => {
-        if (isElectron()) {
-            window.electron!.ipcRenderer.on(channel, callback);
-        } else {
-            browserIpcService.on(channel, callback);
-        }
-    }, [isElectron]);
-
-    /**
-     * Listen for a one-time IPC event
-     */
-    const once = useCallback((channel: string, callback: (...args: any[]) => void): void => {
-        if (isElectron()) {
-            window.electron!.ipcRenderer.once(channel, callback);
-        } else {
-            browserIpcService.once(channel, callback);
-        }
-    }, [isElectron]);
-
-    /**
-     * Remove an IPC event listener
-     */
-    const removeListener = useCallback((channel: string, callback: (...args: any[]) => void): void => {
-        if (isElectron()) {
-            window.electron!.ipcRenderer.removeListener(channel, callback);
-        } else {
-            browserIpcService.removeListener(channel, callback);
-        }
-    }, [isElectron]);
-
-    return {
-        invoke,
-        on,
-        once,
-        removeListener,
-        isElectron: isElectron()
-    };
-}
+    return ipcService;
+}  
