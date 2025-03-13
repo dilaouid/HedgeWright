@@ -1,25 +1,28 @@
+// packages\editor-electron\src\ipc\handlers\assetHandlers.ts
 import { ipcMain } from 'electron';
 import * as fsPromises from 'fs/promises';
 import path from 'path';
 import { app } from 'electron';
 import { existsSync, readdirSync } from 'fs';
+import { getAssetType, getCategoryFromPath } from '@hedgewright/common/utils/assetUtils';
 
 interface AssetCategorizationResult {
     type: 'image' | 'audio' | 'unknown';
-    category: 'background' | 'character' | 'evidence' | 'profile' | 'effect' | 'bgm' | 'sfx' | 'voice' | 'other';
+    category: string;
     relativePath: string;
 }
-
 
 // Define interface for asset items
 interface AssetItem {
-    path: string;
-    name: string;
-    relativePath: string;
-    type: AssetCategorizationResult['type'];
-    category: AssetCategorizationResult['category'];
+    path: string; // Full path
+    relativePath: string; // Path relative to project folder
+    metadata?: {
+        displayName?: string;
+        category?: string;
+        type?: 'image' | 'audio' | 'unknown';
+        isSpecialAnimation?: boolean;
+    };
 }
-
 
 interface CopyResult {
     copied: number;
@@ -28,6 +31,121 @@ interface CopyResult {
 
 export function registerAssetHandlers() {
     console.log('Registering asset IPC handlers...');
+
+    ipcMain.handle('asset:scanDirectory', async (_, projectFolderPath: string) => {
+        try {
+            console.log('Scanning directory for assets:', projectFolderPath);
+            const assetsList: AssetItem[] = [];
+
+            // Define directories to scan based on your folder structure
+            const assetDirectories = [
+                'img/backgrounds',
+                'img/characters',
+                'img/profiles',
+                'img/evidences',
+                'img/effects',
+                'audio/bgm',
+                'audio/sfx',
+                'audio/voices'
+            ];
+
+            for (const directory of assetDirectories) {
+                const fullPath = path.join(projectFolderPath, directory);
+                if (!existsSync(fullPath)) {
+                    console.log(`Directory doesn't exist: ${fullPath}`);
+                    continue;
+                }
+
+                try {
+                    // Use recursive option to scan subdirectories too
+                    const entries = await fsPromises.readdir(fullPath, { withFileTypes: true });
+
+                    for (const entry of entries) {
+                        // Process file
+                        if (entry.isFile()) {
+                            const filePath = path.join(fullPath, entry.name);
+                            const relativePath = path.join(directory, entry.name).replace(/\\/g, '/');
+                            const type = getAssetType(entry.name);
+                            const category = getCategoryFromPath(relativePath);
+
+                            // Detect if it's a special animation
+                            const isSpecialAnimation =
+                                category === 'effect' &&
+                                (entry.name.toLowerCase().includes('special') ||
+                                    entry.name.toLowerCase().includes('anim') ||
+                                    directory.toLowerCase().includes('special'));
+
+                            // Detect if it's a bubble
+                            const isBubble =
+                                category === 'effect' &&
+                                (entry.name.toLowerCase().includes('bubble') ||
+                                    entry.name.toLowerCase().includes('objection') ||
+                                    entry.name.toLowerCase().includes('holdit') ||
+                                    entry.name.toLowerCase().includes('takethat'));
+
+                            assetsList.push({
+                                path: filePath,
+                                relativePath,
+                                metadata: {
+                                    displayName: path.parse(entry.name).name,
+                                    category: isBubble ? 'bubble' : category,
+                                    type,
+                                    isSpecialAnimation
+                                }
+                            });
+                        }
+                        // Process subdirectory
+                        else if (entry.isDirectory()) {
+                            const subDirPath = path.join(fullPath, entry.name);
+                            const subFiles = await fsPromises.readdir(subDirPath, { withFileTypes: true });
+
+                            for (const subFile of subFiles) {
+                                if (subFile.isFile()) {
+                                    const filePath = path.join(subDirPath, subFile.name);
+                                    const relativePath = path.join(directory, entry.name, subFile.name).replace(/\\/g, '/');
+                                    const type = getAssetType(subFile.name);
+                                    const category = getCategoryFromPath(relativePath);
+
+                                    const isSpecialAnimation =
+                                        category === 'effect' &&
+                                        (subFile.name.toLowerCase().includes('special') ||
+                                            subFile.name.toLowerCase().includes('anim') ||
+                                            entry.name.toLowerCase().includes('special'));
+
+                                    const isBubble =
+                                        category === 'effect' &&
+                                        (subFile.name.toLowerCase().includes('bubble') ||
+                                            entry.name.toLowerCase().includes('bubble') ||
+                                            subFile.name.toLowerCase().includes('objection') ||
+                                            subFile.name.toLowerCase().includes('holdit') ||
+                                            subFile.name.toLowerCase().includes('takethat'));
+
+                                    assetsList.push({
+                                        path: filePath,
+                                        relativePath,
+                                        metadata: {
+                                            displayName: path.parse(subFile.name).name,
+                                            category: isBubble ? 'bubble' : category,
+                                            type,
+                                            isSpecialAnimation
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error(`Error reading directory ${fullPath}:`, err);
+                }
+            }
+
+            console.log(`Found ${assetsList.length} assets`);
+            return assetsList;
+        } catch (error) {
+            console.error('Error scanning for assets:', error);
+            throw error;
+        }
+    });
 
     ipcMain.handle('asset:save', async (event, { data, fileName, targetFolder, projectPath }) => {
         try {
@@ -137,20 +255,20 @@ export function registerAssetHandlers() {
 
             // Fonction récursive pour copier un dossier et suivre les assets
             const copyFolderRecursive = async (source: string, destination: string): Promise<CopyResult> => {
-                            let copyCount = 0;
-                            let errorCount = 0;
-            
-                            const entries = await fsPromises.readdir(source, { withFileTypes: true });
-            
-                            for (const entry of entries) {
-                                const srcPath = path.join(source, entry.name);
-                                const destPath = path.join(destination, entry.name);
-            
-                                if (entry.isDirectory()) {
-                                    // Créer le dossier de destination s'il n'existe pas
-                                    try {
-                                        await fsPromises.mkdir(destPath, { recursive: true });
-                                        const results = await copyFolderRecursive(srcPath, destPath);
+                let copyCount = 0;
+                let errorCount = 0;
+
+                const entries = await fsPromises.readdir(source, { withFileTypes: true });
+
+                for (const entry of entries) {
+                    const srcPath = path.join(source, entry.name);
+                    const destPath = path.join(destination, entry.name);
+
+                    if (entry.isDirectory()) {
+                        // Créer le dossier de destination s'il n'existe pas
+                        try {
+                            await fsPromises.mkdir(destPath, { recursive: true });
+                            const results = await copyFolderRecursive(srcPath, destPath);
                             copyCount += results.copied;
                             errorCount += results.errors;
                         } catch (error) {
@@ -162,16 +280,13 @@ export function registerAssetHandlers() {
                             await fsPromises.copyFile(srcPath, destPath);
 
                             // Catégoriser et suivre l'asset
-                            const { type, category, relativePath } = categorizeAsset(srcPath);
+                            const { type, relativePath } = categorizeAsset(srcPath);
 
                             // Ne pas ajouter les fichiers inconnus à la liste des assets
                             if (type !== 'unknown') {
                                 assetsList.push({
                                     path: destPath,
-                                    name: entry.name.replace(/\.[^/.]+$/, ""), // Nom sans extension
-                                    relativePath,
-                                    type,
-                                    category
+                                    relativePath
                                 });
                             }
 

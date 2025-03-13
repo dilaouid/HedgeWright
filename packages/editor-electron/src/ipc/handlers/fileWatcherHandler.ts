@@ -56,7 +56,7 @@ const folderMappings: Record<string, AssetCategory> = {
     'img/backgrounds': { type: 'image', category: 'background', assetType: 'image' },
     'img/characters': { type: 'image', category: 'character', assetType: 'sprite' },
     'img/profiles': { type: 'image', category: 'profile', assetType: 'image' },
-    'img/evidence': { type: 'image', category: 'evidence', assetType: 'image' },
+    'img/evidences': { type: 'image', category: 'evidence', assetType: 'image' },
     'img/effects': { type: 'image', category: 'effect', assetType: 'animation' },
     'img/ui': { type: 'image', category: 'other', assetType: 'image' },
     'audio/bgm': { type: 'audio', category: 'bgm', assetType: 'bgm' },
