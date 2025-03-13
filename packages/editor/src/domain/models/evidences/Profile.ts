@@ -10,7 +10,7 @@ export class Profile {
     readonly name: string;
     readonly age: string;
     readonly gender: string;
-    readonly imageId: string;
+    readonly image: string;
     readonly description: string;
     readonly isInitiallyHidden: boolean;
     readonly switchConditionId: string | null;
@@ -21,7 +21,7 @@ export class Profile {
         name: string,
         age: string,
         gender: string,
-        imageId: string,
+        image: string,
         description: string,
         isInitiallyHidden: boolean = false,
         switchConditionId: string | null = null,
@@ -32,7 +32,7 @@ export class Profile {
         this.name = name;
         this.age = age;
         this.gender = gender;
-        this.imageId = imageId;
+        this.image = image;
         this.description = description;
         this.isInitiallyHidden = isInitiallyHidden;
         this.switchConditionId = switchConditionId;
@@ -48,7 +48,7 @@ export class Profile {
             updates.name ?? this.name,
             updates.age ?? this.age,
             updates.gender ?? this.gender,
-            updates.imageId ?? this.imageId,
+            updates.image ?? this.image,
             updates.description ?? this.description,
             updates.isInitiallyHidden ?? this.isInitiallyHidden,
             updates.switchConditionId ?? this.switchConditionId,
@@ -66,7 +66,7 @@ export class Profile {
             name: this.name,
             age: this.age,
             gender: this.gender,
-            imageId: this.imageId,
+            image: this.image,
             description: this.description,
             isInitiallyHidden: this.isInitiallyHidden,
             switchConditionId: this.switchConditionId,
@@ -83,7 +83,7 @@ export class Profile {
             json.name,
             json.age,
             json.gender,
-            json.imageId,
+            json.image,
             json.description,
             json.isInitiallyHidden,
             json.switchConditionId,

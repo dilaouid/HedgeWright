@@ -8,7 +8,7 @@ export class Scene {
     readonly uuid: string;
     readonly customId: string;
     readonly name: string;
-    readonly backgroundId: string;
+    readonly background: string; // path to background image
     readonly isDoubleScreen: boolean;
     readonly characterId: string | null;
     readonly characterPosition: string;
@@ -23,7 +23,7 @@ export class Scene {
     constructor(
         customId: string,
         name: string,
-        backgroundId: string,
+        background: string,
         position: number,
         isDoubleScreen: boolean = false,
         characterId: string | null = null,
@@ -38,7 +38,7 @@ export class Scene {
         this.uuid = uuidv4();
         this.customId = customId;
         this.name = name;
-        this.backgroundId = backgroundId;
+        this.background = background;
         this.isDoubleScreen = isDoubleScreen;
         this.characterId = characterId;
         this.characterPosition = characterPosition;
@@ -58,7 +58,7 @@ export class Scene {
         return new Scene(
             updates.customId ?? this.customId,
             updates.name ?? this.name,
-            updates.backgroundId ?? this.backgroundId,
+            updates.background ?? this.background,
             updates.position ?? this.position,
             updates.isDoubleScreen ?? this.isDoubleScreen,
             updates.characterId ?? this.characterId,
@@ -108,7 +108,7 @@ export class Scene {
             uuid: this.uuid,
             customId: this.customId,
             name: this.name,
-            backgroundId: this.backgroundId,
+            background: this.background,
             isDoubleScreen: this.isDoubleScreen,
             characterId: this.characterId,
             characterPosition: this.characterPosition,
@@ -129,7 +129,7 @@ export class Scene {
         return new Scene(
             json.customId,
             json.name,
-            json.backgroundId,
+            json.background,
             json.position,
             json.isDoubleScreen,
             json.characterId,

@@ -10,11 +10,7 @@ import {
   StopCircle,
   Save,
 } from 'lucide-react';
-import {
-  useProjectStore,
-  Asset,
-  Music,
-} from '@/application/state/project/projectStore';
+import { useProjectStore } from '@/application/state/project/projectStore';
 import { Button } from '@/presentation/components/ui/button';
 import { Input } from '@/presentation/components/ui/input';
 import { Card } from '@/presentation/components/ui/card';
@@ -31,6 +27,7 @@ import {
   DialogTitle,
 } from '@/presentation/components/ui/dialog';
 import { Howl } from 'howler';
+import path from 'path';
 
 interface BubbleSet {
   id: string;
@@ -42,8 +39,8 @@ interface BubbleItem {
   id: string;
   name: string;
   type: 'objection' | 'hold_it' | 'take_that' | 'custom';
-  animationAssetId: string;
-  soundAssetId: string;
+  animationPath: string;
+  soundPath: string;
 }
 
 export function BubbleSetManager() {
@@ -59,66 +56,65 @@ export function BubbleSetManager() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Extract bubble data from project assets
+  // Extract bubble data from project assets
+  // Extract bubble data from project assets
   useEffect(() => {
     if (currentProject) {
-      // Find all bubble sets by category
-      const bubbleAssets = currentProject.assets.filter(
-        (asset) =>
-          asset.category === 'bubble' ||
-          asset.category === 'objection' ||
-          asset.category === 'hold_it' ||
-          asset.category === 'take_that' ||
-          asset.category === 'custom'
+      // Extract bubble sets from asset metadata
+      const bubbleSetsMap = new Map<string, BubbleSet>();
+      const assetMetadata = currentProject.assetMetadata || {};
+
+      // Find all animation paths used as bubbles
+      const bubblePaths = Object.keys(assetMetadata).filter(
+        (path) =>
+          assetMetadata[path]?.bubbleId && assetMetadata[path]?.bubbleSetId
       );
 
-      // Extract bubble sets from metadata
-      const extractedSets: BubbleSet[] = [];
-      const bubbleSetsMap = new Map<string, BubbleSet>();
-
       // First pass: create sets
-      bubbleAssets.forEach((asset) => {
-        if (asset.metadata?.bubbleSetId) {
-          const setId = asset.metadata.bubbleSetId as string;
-          if (!bubbleSetsMap.has(setId)) {
-            bubbleSetsMap.set(setId, {
-              id: setId,
-              name: (asset.metadata?.bubbleSetName as string) || 'Unknown Set',
-              bubbles: [],
-            });
-          }
+      bubblePaths.forEach((path) => {
+        const metadata = assetMetadata[path];
+        const setId = metadata.bubbleSetId as string;
+
+        if (setId && !bubbleSetsMap.has(setId)) {
+          bubbleSetsMap.set(setId, {
+            id: setId,
+            name: (metadata.bubbleSetName as string) || 'Unknown Set',
+            bubbles: [],
+          });
         }
       });
 
       // Second pass: populate bubbles in sets
-      bubbleAssets.forEach((asset) => {
-        if (asset.metadata?.bubbleSetId && asset.metadata?.bubbleId) {
-          const setId = asset.metadata.bubbleSetId as string;
-          const set = bubbleSetsMap.get(setId);
+      bubblePaths.forEach((path) => {
+        const metadata = assetMetadata[path];
+        const setId = metadata.bubbleSetId as string;
+        const bubbleId = metadata.bubbleId as string;
+        const set = bubbleSetsMap.get(setId);
 
-          if (set) {
-            // Check if this bubble already exists
-            const existingBubble = set.bubbles.find(
-              (b) => b.id === asset.metadata?.bubbleId
-            );
+        if (set && bubbleId) {
+          // Check if this bubble already exists
+          const existingBubble = set.bubbles.find((b) => b.id === bubbleId);
 
-            if (!existingBubble) {
-              const bubble: BubbleItem = {
-                id: asset.metadata.bubbleId as string,
-                name: (asset.metadata.bubbleName as string) || asset.name,
-                type:
-                  (asset.metadata.bubbleType as
-                    | 'objection'
-                    | 'hold_it'
-                    | 'take_that'
-                    | 'custom') || 'custom',
-                animationAssetId: asset.id,
-                soundAssetId: (asset.metadata?.soundAssetId as string) || '',
-              };
-              set.bubbles.push(bubble);
-            } else if (asset.metadata?.isSound) {
-              // This is a sound asset for an existing bubble
-              existingBubble.soundAssetId = asset.id;
-            }
+          if (!existingBubble) {
+            const bubble: BubbleItem = {
+              id: bubbleId,
+              name:
+                (metadata.bubbleName as string) ||
+                path.split('/').pop()?.split('.')[0] ||
+                path,
+              type:
+                (metadata.bubbleType as
+                  | 'objection'
+                  | 'hold_it'
+                  | 'take_that'
+                  | 'custom') || 'custom',
+              animationPath: path,
+              soundPath: metadata.soundPath || '',
+            };
+            set.bubbles.push(bubble);
+          } else if (metadata.isSound) {
+            // This is a sound asset for an existing bubble
+            existingBubble.soundPath = path;
           }
         }
       });
@@ -134,6 +130,7 @@ export function BubbleSetManager() {
       }
 
       // Convert map to array
+      const extractedSets: BubbleSet[] = [];
       bubbleSetsMap.forEach((set) => extractedSets.push(set));
 
       // Update state with extracted data
@@ -144,16 +141,15 @@ export function BubbleSetManager() {
   }, [currentProject]);
 
   // Handle audio playback
-  const playAudio = (assetId: string) => {
+  const playAudio = (soundPath: string) => {
     // Stop any currently playing audio
     if (audioRef.current) {
       audioRef.current.stop();
       audioRef.current = null;
     }
 
-    const musicAsset = currentProject?.music.find((m) => m.id === assetId);
-    if (musicAsset) {
-      const fullPath = musicAsset.path;
+    if (soundPath && currentProject?.projectFolderPath) {
+      const fullPath = path.join(currentProject.projectFolderPath, soundPath);
 
       audioRef.current = new Howl({
         src: [fullPath],
@@ -172,7 +168,7 @@ export function BubbleSetManager() {
       });
 
       audioRef.current.play();
-      setAudioPlaying(assetId);
+      setAudioPlaying(soundPath);
     }
   };
 
@@ -236,8 +232,8 @@ export function BubbleSetManager() {
       id: nanoid(),
       name: 'New Bubble',
       type: 'custom',
-      animationAssetId: '',
-      soundAssetId: '',
+      animationPath: '',
+      soundPath: '',
     };
 
     setEditingBubble(newBubble);
@@ -269,39 +265,34 @@ export function BubbleSetManager() {
 
       // Update metadata on assets
       updateProject((draft) => {
-        // Update animation asset metadata
-        const animAssetIndex = draft.assets.findIndex(
-          (a) => a.id === editingBubble.animationAssetId
-        );
-        if (animAssetIndex >= 0) {
-          if (!draft.assets[animAssetIndex].metadata) {
-            draft.assets[animAssetIndex].metadata = {};
-          }
+        // S'assurer que assetMetadata existe
+        if (!draft.assetMetadata) {
+          draft.assetMetadata = {};
+        }
 
-          draft.assets[animAssetIndex].metadata.bubbleId = editingBubble.id;
-          draft.assets[animAssetIndex].metadata.bubbleName = editingBubble.name;
-          draft.assets[animAssetIndex].metadata.bubbleType = editingBubble.type;
-          draft.assets[animAssetIndex].metadata.bubbleSetId = activeSetId;
-          draft.assets[animAssetIndex].metadata.bubbleSetName =
-            updatedSets[setIndex].name;
-          draft.assets[animAssetIndex].metadata.soundAssetId =
-            editingBubble.soundAssetId;
+        // Update animation asset metadata
+        if (editingBubble.animationPath) {
+          draft.assetMetadata[editingBubble.animationPath] = {
+            ...draft.assetMetadata[editingBubble.animationPath],
+            bubbleId: editingBubble.id,
+            bubbleName: editingBubble.name,
+            bubbleType: editingBubble.type,
+            bubbleSetId: activeSetId,
+            bubbleSetName: updatedSets[setIndex].name,
+            soundPath: editingBubble.soundPath,
+            category: 'bubble',
+          };
         }
 
         // Update sound asset metadata if it exists
-        if (editingBubble.soundAssetId) {
-          const soundAssetIndex = draft.music.findIndex(
-            (m) => m.id === editingBubble.soundAssetId
-          );
-          if (soundAssetIndex >= 0) {
-            if (!draft.music[soundAssetIndex].metadata) {
-              draft.music[soundAssetIndex].metadata = {};
-            }
-
-            draft.music[soundAssetIndex].metadata.isSound = true;
-            draft.music[soundAssetIndex].metadata.bubbleId = editingBubble.id;
-            draft.music[soundAssetIndex].metadata.bubbleSetId = activeSetId;
-          }
+        if (editingBubble.soundPath) {
+          draft.assetMetadata[editingBubble.soundPath] = {
+            ...draft.assetMetadata[editingBubble.soundPath],
+            isSound: true,
+            bubbleId: editingBubble.id,
+            bubbleSetId: activeSetId,
+            category: 'sfx',
+          };
         }
       });
     }
@@ -333,14 +324,16 @@ export function BubbleSetManager() {
   };
 
   // Get asset info for preview display
-  const getAssetInfo = (assetId: string, isSound = false) => {
-    if (!assetId) return null;
+  const getAssetPath = (relativePath: string) => {
+    if (!relativePath || !currentProject?.projectFolderPath) return '';
+    return path.join(currentProject.projectFolderPath, relativePath);
+  };
 
-    if (isSound) {
-      return currentProject?.music.find((m) => m.id === assetId);
-    } else {
-      return currentProject?.assets.find((a) => a.id === assetId);
-    }
+  const getAssetName = (relativePath: string) => {
+    if (!relativePath) return '';
+    const metadata = currentProject?.assetMetadata?.[relativePath];
+    const fileName = relativePath.split('/').pop() || '';
+    return metadata?.displayName || fileName.split('.')[0] || '';
   };
 
   if (isLoading) {
@@ -427,14 +420,6 @@ export function BubbleSetManager() {
               {set.bubbles.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {set.bubbles.map((bubble) => {
-                    const animAsset = getAssetInfo(bubble.animationAssetId) as
-                      | Asset
-                      | undefined;
-                    const soundAsset = getAssetInfo(
-                      bubble.soundAssetId,
-                      true
-                    ) as Music | undefined;
-
                     return (
                       <Card
                         key={bubble.id}
@@ -452,9 +437,9 @@ export function BubbleSetManager() {
 
                           {/* Preview area */}
                           <div className="aspect-video bg-blue-900/30 rounded-md flex items-center justify-center mb-3 overflow-hidden">
-                            {animAsset ? (
+                            {bubble.animationPath ? (
                               <img
-                                src={animAsset.path}
+                                src={getAssetPath(bubble.animationPath)}
                                 alt={bubble.name}
                                 className="w-full h-full object-contain"
                               />
@@ -467,12 +452,12 @@ export function BubbleSetManager() {
 
                           <div className="flex justify-between items-center">
                             <div className="text-sm text-blue-300">
-                              {soundAsset ? (
+                              {bubble.soundPath ? (
                                 <div className="flex items-center gap-2">
                                   <span className="truncate max-w-[120px]">
-                                    {soundAsset.name}
+                                    {getAssetName(bubble.soundPath)}
                                   </span>
-                                  {audioPlaying === soundAsset.id ? (
+                                  {audioPlaying === bubble.soundPath ? (
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -486,7 +471,9 @@ export function BubbleSetManager() {
                                       variant="ghost"
                                       size="icon"
                                       className="h-8 w-8 text-blue-400 hover:text-blue-300"
-                                      onClick={() => playAudio(soundAsset.id)}
+                                      onClick={() =>
+                                        playAudio(bubble.soundPath)
+                                      }
                                     >
                                       <PlaySquare className="h-4 w-4" />
                                     </Button>
@@ -659,28 +646,21 @@ export function BubbleSetManager() {
                     Animation Asset
                   </label>
                   <select
-                    value={editingBubble.animationAssetId}
+                    value={editingBubble.animationPath}
                     onChange={(e) =>
                       setEditingBubble({
                         ...editingBubble,
-                        animationAssetId: e.target.value,
+                        animationPath: e.target.value,
                       })
                     }
                     className="w-full bg-blue-900/30 border border-blue-700 rounded-md p-2 text-white"
                   >
                     <option value="">-- Select Animation --</option>
-                    {currentProject?.assets
-                      .filter(
-                        (a) =>
-                          a.type === 'gif' ||
-                          a.type === 'png' ||
-                          a.type === 'webp'
-                      )
-                      .map((asset) => (
-                        <option key={asset.id} value={asset.id}>
-                          {asset.name}
-                        </option>
-                      ))}
+                    {currentProject?.folders?.img.effects.map((path) => (
+                      <option key={path} value={path}>
+                        {getAssetName(path)}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -689,23 +669,21 @@ export function BubbleSetManager() {
                     Sound Asset
                   </label>
                   <select
-                    value={editingBubble.soundAssetId}
+                    value={editingBubble.soundPath}
                     onChange={(e) =>
                       setEditingBubble({
                         ...editingBubble,
-                        soundAssetId: e.target.value,
+                        soundPath: e.target.value,
                       })
                     }
                     className="w-full bg-blue-900/30 border border-blue-700 rounded-md p-2 text-white"
                   >
                     <option value="">-- Select Sound --</option>
-                    {currentProject?.music
-                      .filter((m) => m.type === 'sfx')
-                      .map((sound) => (
-                        <option key={sound.id} value={sound.id}>
-                          {sound.name}
-                        </option>
-                      ))}
+                    {currentProject?.folders?.audio.sfx.map((path) => (
+                      <option key={path} value={path}>
+                        {getAssetName(path)}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -714,33 +692,30 @@ export function BubbleSetManager() {
               <div className="bg-blue-900/20 p-4 rounded-lg border border-blue-800">
                 <h4 className="text-blue-200 text-sm mb-2">Preview</h4>
                 <div className="flex flex-wrap gap-4">
-                  {editingBubble.animationAssetId && (
+                  {editingBubble.animationPath && (
                     <div className="w-40 h-40 bg-blue-900/30 rounded-md flex items-center justify-center overflow-hidden">
                       <img
-                        src={
-                          getAssetInfo(editingBubble.animationAssetId)?.path ||
-                          ''
-                        }
+                        src={getAssetPath(editingBubble.animationPath)}
                         alt={editingBubble.name}
                         className="max-w-full max-h-full object-contain"
                       />
                     </div>
                   )}
 
-                  {editingBubble.soundAssetId && (
+                  {editingBubble.soundPath && (
                     <div className="flex items-center">
                       <Button
                         variant="outline"
                         className="bg-blue-800 border-blue-700 text-white hover:bg-blue-700 flex items-center gap-2"
                         onClick={() => {
-                          if (audioPlaying === editingBubble.soundAssetId) {
+                          if (audioPlaying === editingBubble.soundPath) {
                             stopAudio();
                           } else {
-                            playAudio(editingBubble.soundAssetId);
+                            playAudio(editingBubble.soundPath);
                           }
                         }}
                       >
-                        {audioPlaying === editingBubble.soundAssetId ? (
+                        {audioPlaying === editingBubble.soundPath ? (
                           <>
                             <StopCircle className="h-4 w-4" />
                             Stop Sound
@@ -772,8 +747,7 @@ export function BubbleSetManager() {
                   className="bg-yellow-600 text-white hover:bg-yellow-500 flex items-center gap-1"
                   onClick={saveBubble}
                   disabled={
-                    !editingBubble.name.trim() ||
-                    !editingBubble.animationAssetId
+                    !editingBubble.name.trim() || !editingBubble.animationPath
                   }
                 >
                   <Save className="h-4 w-4" />

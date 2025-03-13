@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -19,11 +20,7 @@ import {
 import { Button } from '@/presentation/components/ui/button';
 import { Input } from '@/presentation/components/ui/input';
 import { Card } from '@/presentation/components/ui/card';
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from '@/presentation/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/presentation/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -31,16 +28,36 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/presentation/components/ui/dialog';
+import { useAssetManager } from '@/application/hooks/assets/useAssetManager';
+
 import { Howl } from 'howler';
 import { Slider } from '@/presentation/components/ui/slider';
+import path from 'path-browserify';
+
+type AudioCategory = 'bgm' | 'sfx' | 'voices';
+interface MusicInfo {
+  path: string;
+  name: string;
+  type: string;
+  loop: boolean;
+  metadata: Record<string, any>;
+}
+
+// Group music by categories (for better organization)
+interface MusicByCategory {
+  [category: string]: Array<MusicInfo>;
+}
 
 export function MusicManager() {
   const { currentProject, updateProject } = useProjectStore();
-  const [activeTab, setActiveTab] = useState('bgm');
+  const { updateAssetMetadata } = useAssetManager();
+
+  const [activeTab, setActiveTab] = useState<AudioCategory>('bgm');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingMusic, setEditingMusic] = useState<Music | null>(null);
+  const [editingMusic, setEditingMusic] = useState<MusicInfo | null>(null);
+
   const [volume, setVolume] = useState(1.0);
   const [isLoading, setIsLoading] = useState(true);
   const audioRef = useRef<Howl | null>(null);
@@ -50,25 +67,34 @@ export function MusicManager() {
 
   // Filter music by type and search term
   const filteredMusic =
-    currentProject?.music.filter((music) => {
-      const matchesType = music.type === activeTab;
-      const matchesSearch = music.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
-      return matchesType && matchesSearch;
-    }) || [];
+    currentProject?.folders?.audio &&
+    (activeTab === 'bgm' || activeTab === 'sfx' || activeTab === 'voices')
+      ? currentProject.folders.audio[activeTab]
+          ?.map((path) => {
+            const metadata = currentProject.assetMetadata?.[path] || {};
+            return {
+              path,
+              name: metadata.displayName || path.split('/').pop() || path,
+              type: activeTab,
+              loop: metadata.loop || activeTab === 'bgm',
+              metadata,
+            };
+          })
+          .filter((music) =>
+            music.name.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+      : [];
 
-  // Group music by categories (for better organization)
-  const musicByCategory = filteredMusic.reduce(
-    (acc, music) => {
+  const musicByCategory: MusicByCategory = filteredMusic.reduce(
+    (acc: MusicByCategory, music: MusicInfo) => {
       const category = music.metadata?.category || 'Uncategorized';
       if (!acc[category]) {
         acc[category] = [];
       }
-      acc[category].push(music);
+      acc[category].push({ ...music, path: music.path });
       return acc;
     },
-    {} as Record<string, Music[]>
+    {} as MusicByCategory
   );
 
   // Categories in preferred order
@@ -90,8 +116,13 @@ export function MusicManager() {
     return indexA - indexB;
   });
 
+  const getAssetPath = (assetPath: string) => {
+    if (!assetPath || !currentProject?.projectFolderPath) return '';
+    return path.join(currentProject.projectFolderPath, assetPath);
+  };
+
   // Play audio
-  const playAudio = (musicAsset: Music) => {
+  const playAudio = (musicPath: string) => {
     // Stop any currently playing audio
     if (audioRef.current) {
       audioRef.current.stop();
@@ -99,7 +130,7 @@ export function MusicManager() {
       audioRef.current = null;
     }
 
-    const fullPath = musicAsset.path;
+    const fullPath = getAssetPath(musicPath);
 
     audioRef.current = new Howl({
       src: [fullPath],
@@ -108,15 +139,16 @@ export function MusicManager() {
       loop: activeTab === 'bgm',
       onload: () => {
         if (audioRef.current) {
-          setDuration(audioRef.current.duration());
+          setDuration(audioRef.current.duration()); // Utilisez setDuration ici
         }
       },
       onplay: () => {
         startProgressTimer();
-        setCurrentlyPlaying(musicAsset.id);
+        setCurrentlyPlaying(musicPath);
       },
       onend: () => {
-        if (!musicAsset.loop) {
+        if (!musicPath.includes('/bgm/')) {
+          // Vérifiez le type via le chemin
           clearProgressTimer();
           setCurrentlyPlaying(null);
           setProgress(0);
@@ -137,6 +169,7 @@ export function MusicManager() {
     });
 
     audioRef.current.play();
+    setCurrentlyPlaying(musicPath);
   };
 
   // Stop audio
@@ -207,17 +240,33 @@ export function MusicManager() {
   };
 
   // Delete music asset
-  const deleteMusic = (musicId: string) => {
+  const deleteMusic = (musicPath: string) => {
     if (window.confirm('Are you sure you want to delete this audio file?')) {
       // Stop if it's currently playing
-      if (currentlyPlaying === musicId) {
+      if (currentlyPlaying === musicPath) {
         stopAudio();
       }
 
       updateProject((draft) => {
-        const index = draft.music.findIndex((m) => m.id === musicId);
-        if (index !== -1) {
-          draft.music.splice(index, 1);
+        // Supprimer de la structure de dossiers appropriée
+        const audioType = musicPath.includes('/bgm/')
+          ? 'bgm'
+          : musicPath.includes('/sfx/')
+            ? 'sfx'
+            : musicPath.includes('/voices/')
+              ? 'voices'
+              : null;
+
+        if (audioType && draft.folders?.audio[audioType]) {
+          const index = draft.folders.audio[audioType].indexOf(musicPath);
+          if (index !== -1) {
+            draft.folders.audio[audioType].splice(index, 1);
+          }
+        }
+
+        // Supprimer les métadonnées
+        if (draft.assetMetadata && draft.assetMetadata[musicPath]) {
+          delete draft.assetMetadata[musicPath];
         }
       });
     }
@@ -225,7 +274,11 @@ export function MusicManager() {
 
   // Edit music metadata
   const openEditModal = (music: Music) => {
-    setEditingMusic({ ...music });
+    setEditingMusic({
+      ...music,
+      loop: music.loop ?? false, // Ensure loop is a boolean, not undefined
+      metadata: music.metadata ?? {},
+    });
     setIsEditModalOpen(true);
   };
 
@@ -233,10 +286,24 @@ export function MusicManager() {
     if (!editingMusic) return;
 
     updateProject((draft) => {
-      const index = draft.music.findIndex((m) => m.id === editingMusic.id);
-      if (index !== -1) {
-        draft.music[index] = { ...editingMusic };
+      if (!draft.assetMetadata) {
+        draft.assetMetadata = {};
       }
+
+      draft.assetMetadata[editingMusic.path] = {
+        ...draft.assetMetadata[editingMusic.path],
+        displayName: editingMusic.name,
+        category: editingMusic.metadata?.category || 'Uncategorized',
+        loop: editingMusic.loop,
+        type: editingMusic.type,
+      };
+    });
+
+    // Also update with useAssetManager hook
+    updateAssetMetadata(editingMusic.path, {
+      displayName: editingMusic.name,
+      category: editingMusic.metadata?.category || 'Uncategorized',
+      loop: editingMusic.loop,
     });
 
     setIsEditModalOpen(false);
@@ -280,7 +347,7 @@ export function MusicManager() {
         <Tabs
           defaultValue="bgm"
           value={activeTab}
-          onValueChange={setActiveTab}
+          onValueChange={(value) => setActiveTab(value as AudioCategory)}
           className="w-full md:w-auto"
         >
           <TabsList className="bg-blue-900/50 w-full md:w-auto">
@@ -291,8 +358,7 @@ export function MusicManager() {
               <MusicIcon className="w-4 h-4 mr-2" />
               Background Music
               <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                {currentProject?.music.filter((m) => m.type === 'bgm').length ||
-                  0}
+                {currentProject?.folders?.audio.bgm?.length || 0}
               </span>
             </TabsTrigger>
             <TabsTrigger
@@ -302,8 +368,7 @@ export function MusicManager() {
               <Volume2 className="w-4 h-4 mr-2" />
               Sound Effects
               <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                {currentProject?.music.filter((m) => m.type === 'sfx').length ||
-                  0}
+                {currentProject?.folders?.audio.sfx?.length || 0}
               </span>
             </TabsTrigger>
             <TabsTrigger
@@ -313,8 +378,7 @@ export function MusicManager() {
               <VolumeX className="w-4 h-4 mr-2" />
               Voice Clips
               <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                {currentProject?.music.filter((m) => m.type === 'voice')
-                  .length || 0}
+                {currentProject?.folders?.audio.voices?.length || 0}
               </span>
             </TabsTrigger>
           </TabsList>
@@ -353,8 +417,10 @@ export function MusicManager() {
 
               <div className="flex-1">
                 <h3 className="text-white font-medium truncate">
-                  {currentProject?.music.find((m) => m.id === currentlyPlaying)
-                    ?.name || 'Unknown'}
+                  {currentProject?.assetMetadata?.[currentlyPlaying]
+                    ?.displayName ||
+                    currentlyPlaying?.split('/').pop() ||
+                    'Unknown'}
                 </h3>
 
                 <div className="flex items-center gap-2 mt-1">
@@ -458,7 +524,7 @@ export function MusicManager() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {musicByCategory[category].map((music) => (
                   <Card
-                    key={music.id}
+                    key={music.path}
                     className="bg-blue-950 border-blue-800 overflow-hidden flex flex-col"
                   >
                     <div className="p-3 flex justify-between items-start">
@@ -467,7 +533,7 @@ export function MusicManager() {
                           className={`
                           w-10 h-10 rounded-lg flex items-center justify-center
                           ${
-                            currentlyPlaying === music.id
+                            currentlyPlaying === music.path
                               ? 'bg-yellow-600 text-white animate-pulse'
                               : 'bg-blue-900 text-blue-400'
                           }
@@ -505,7 +571,7 @@ export function MusicManager() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-red-400 hover:text-red-300"
-                          onClick={() => deleteMusic(music.id)}
+                          onClick={() => deleteMusic(music.path)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -524,19 +590,19 @@ export function MusicManager() {
                         variant="outline"
                         size="sm"
                         className={`flex items-center gap-1 ${
-                          currentlyPlaying === music.id
+                          currentlyPlaying === music.path
                             ? 'bg-yellow-600 hover:bg-yellow-500 text-white border-yellow-700'
                             : 'bg-blue-800 border-blue-700 text-white hover:bg-blue-700'
                         }`}
                         onClick={() => {
-                          if (currentlyPlaying === music.id) {
+                          if (currentlyPlaying === music.path) {
                             stopAudio();
                           } else {
-                            playAudio(music);
+                            playAudio(music.path);
                           }
                         }}
                       >
-                        {currentlyPlaying === music.id ? (
+                        {currentlyPlaying === music.path ? (
                           <>
                             <VolumeX className="h-3.5 w-3.5" />
                             Stop

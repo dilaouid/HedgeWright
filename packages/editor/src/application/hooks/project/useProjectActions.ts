@@ -1,3 +1,4 @@
+// packages\editor\src\application\hooks\project\useProjectActions.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 import path from 'path-browserify';
@@ -18,7 +19,7 @@ const PROJECT_FOLDERS = [
     'img/backgrounds',
     'img/characters',
     'img/profiles',
-    'img/evidence',
+    'img/evidences',
     'img/effects',
     'documents',
     'data'

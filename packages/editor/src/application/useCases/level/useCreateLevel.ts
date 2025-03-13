@@ -1,11 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
+import path from 'path-browserify';
+
 import { useFileSystemService } from '@/infrastructure/filesystem/services/useFileSystemService';
 import { useRecentProjectsStore, Project } from '@/application/state/project/recentProjectsStore';
 import { useProjectStore, ProjectData } from '@/application/state/project/projectStore';
-import { toast } from 'sonner';
-import path from 'path-browserify';
 import { useIpcService } from '@/infrastructure/electron/services/useIpcService';
-import { Asset, AssetType, Music, MusicType } from '@hedgewright/common';
 
 interface NewCaseData {
     title: string;
@@ -21,7 +21,7 @@ const PROJECT_FOLDERS = [
     'img/backgrounds',
     'img/characters',
     'img/profiles',
-    'img/evidence',
+    'img/evidences',
     'img/effects',
     'documents',
     'data'
@@ -48,97 +48,7 @@ export function useCreateLevel() {
 
                 if (!result || result.assetsList?.length === 0) {
                     console.warn('No assets were copied or returned');
-                    return { assets: [], music: [] };
                 }
-
-                const assets: Asset[] = [];
-                const music: Music[] = [];
-
-                for (const item of result.assetsList) {
-                    const uuid = uuidv4();
-                    const customId = `asset_${item.name.replace(/\s+/g, '_').toLowerCase()}`;
-
-                    if (item.type === 'image') {
-                        const assetType = mapCategoryToAssetType(item.category);
-
-                        assets.push({
-                            uuid,
-                            customId,
-                            name: item.name,
-                            type: assetType,
-                            path: item.path,
-                            mimeType: getMimeTypeFromExtension(item.path),
-                            metadata: {
-                                relativePath: item.relativePath,
-                                category: item.category
-                            },
-                            update: (updates: Partial<Omit<Asset, 'uuid'>>) => {
-                                return new Asset(
-                                    updates.customId ?? customId,
-                                    updates.name ?? item.name,
-                                    updates.type ?? assetType,
-                                    updates.path ?? item.path,
-                                    updates.mimeType ?? getMimeTypeFromExtension(item.path),
-                                    updates.metadata ?? { relativePath: item.relativePath, category: item.category }
-                                );
-                            },
-                            toJSON: () => {
-                                return {
-                                    uuid,
-                                    customId,
-                                    name: item.name,
-                                    type: assetType,
-                                }
-                            }
-                        });
-
-                    } else if (item.type === 'audio') {
-                        const musicType = mapCategoryToMusicType(item.category);
-
-                        music.push({
-                            uuid,
-                            customId,
-                            name: item.name,
-                            path: item.path,
-                            musicType,
-                            volume: 1.0,
-                            loop: item.category === 'bgm',
-                            metadata: {
-                                relativePath: item.relativePath
-                            },
-                            update: (updates: Partial<Omit<Music, 'uuid'>>) => {
-                                return new Music(
-                                    updates.customId ?? customId,
-                                    updates.name ?? item.name,
-                                    updates.musicType ?? musicType,
-                                    updates.path ?? item.path,
-                                    updates.volume ?? 1.0,
-                                    updates.loop ?? item.category === 'bgm',
-                                    {
-                                        relativePath: updates.metadata?.relativePath ?? item.relativePath
-                                    }
-                                );
-                            },
-                            isBackgroundMusic: () => musicType === 'bgm',
-                            isSoundEffect: () => musicType === 'sfx',
-                            isVoice: () => musicType === 'voice',
-                            toJSON: () => {
-                                return {
-                                    uuid,
-                                    customId,
-                                    name: item.name,
-                                    musicType,
-                                    path: item.path
-                                }
-                            }
-                        });
-
-                    }
-                }
-
-                console.log(`Processed ${assets.length} assets and ${music.length} music files`);
-                return { assets, music };
-
             } catch (error) {
                 console.error('Failed to copy default assets:', error);
                 throw error;
@@ -152,7 +62,7 @@ export function useCreateLevel() {
                     { src: 'img/backgrounds/courtroom.png', category: 'backgrounds' },
                     { src: 'img/backgrounds/detention_center.png', category: 'backgrounds' },
                     { src: 'img/characters/default_attorney.png', category: 'characters' },
-                    { src: 'img/evidence/badge.png', category: 'evidence' },
+                    { src: 'img/evidences/badge.png', category: 'evidence' },
                     { src: 'audio/sfx/objection.mp3', category: 'sfx' }
                 ];
 
@@ -227,8 +137,6 @@ export function useCreateLevel() {
             crossExaminations: [],
             messages: [],
             events: [],
-            assets: [],
-            music: [],
             characters: [],
             backgrounds: []
         };
@@ -267,28 +175,7 @@ export function useCreateLevel() {
                 await createProjectFolders(projectFolderPath);
                 console.log('Copying default assets to project folder:', projectFolderPath);
 
-                const { assets, music } = await copyDefaultAssets(projectFolderPath);
-                projectData.assets = (assets || []).map(asset => ({
-                    id: asset.uuid,
-                    name: asset.name,
-                    type: asset.type,
-                    path: asset.path,
-                    relativePath: asset.metadata?.relativePath,
-                    category: asset.metadata?.category,
-                    metadata: asset.metadata
-                }));
-                projectData.music = (music || []).map(music => ({
-                    id: music.uuid,
-                    name: music.name,
-                    type: music.musicType,
-                    path: music.path,
-                    musicType: music.musicType,
-                    volume: music.volume,
-                    loop: music.loop,
-                    metadata: music.metadata
-                }));
-
-                console.log(`Added ${projectData.assets.length} assets and ${projectData.music.length} music files to project data`);
+                await copyDefaultAssets(projectFolderPath);
 
                 // Update project data with folder path
                 projectData.projectFolderPath = projectFolderPath;
@@ -387,41 +274,4 @@ ${caseData.description || 'No description provided.'}
     };
 
     return { createNewCase };
-}
-
-function getMimeTypeFromExtension(path: string): string {
-    const ext = path.toLowerCase().split('.').pop() || '';
-    const mimeMap: Record<string, string> = {
-        'png': 'image/png',
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'gif': 'image/gif',
-        'webp': 'image/webp',
-        'mp3': 'audio/mpeg',
-        'wav': 'audio/wav',
-        'ogg': 'audio/ogg'
-    };
-    return mimeMap[ext] || 'application/octet-stream';
-}
-
-// Fonction pour mapper les catégories aux types d'assets
-function mapCategoryToAssetType(category: string): AssetType {
-    switch (category) {
-        case 'background': return AssetType.IMAGE
-        case 'character': return AssetType.SPRITE
-        case 'evidence': return AssetType.IMAGE
-        case 'profile': return AssetType.IMAGE
-        case 'effect': return AssetType.ANIMATION
-        default: return AssetType.IMAGE
-    }
-}
-
-// Fonction pour mapper les catégories aux types de musique
-function mapCategoryToMusicType(category: string): MusicType {
-    switch (category) {
-        case 'bgm': return MusicType.BGM
-        case 'sfx': return MusicType.SFX
-        case 'voice': return MusicType.VOICE
-        default: return MusicType.BGM
-    }
 }

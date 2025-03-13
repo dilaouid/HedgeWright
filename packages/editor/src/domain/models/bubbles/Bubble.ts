@@ -11,7 +11,7 @@ export class Bubble {
     readonly bubbleSetId: string;
     readonly type: BubbleType;
     readonly name: string;
-    readonly animationId: string;
+    readonly animation: string;
     readonly soundId: string;
     readonly metadata: Record<string, unknown>;
 
@@ -20,7 +20,7 @@ export class Bubble {
         bubbleSetId: string,
         type: BubbleType,
         name: string,
-        animationId: string,
+        animation: string,
         soundId: string,
         metadata: Record<string, unknown> = {}
     ) {
@@ -29,7 +29,7 @@ export class Bubble {
         this.bubbleSetId = bubbleSetId;
         this.type = type;
         this.name = name;
-        this.animationId = animationId;
+        this.animation = animation;
         this.soundId = soundId;
         this.metadata = metadata;
     }
@@ -43,7 +43,7 @@ export class Bubble {
             updates.bubbleSetId ?? this.bubbleSetId,
             updates.type ?? this.type,
             updates.name ?? this.name,
-            updates.animationId ?? this.animationId,
+            updates.animation ?? this.animation,
             updates.soundId ?? this.soundId,
             updates.metadata ?? this.metadata
         );
@@ -87,7 +87,7 @@ export class Bubble {
             bubbleSetId: this.bubbleSetId,
             type: this.type,
             name: this.name,
-            animationId: this.animationId,
+            animation: this.animation,
             soundId: this.soundId,
             metadata: this.metadata
         };
@@ -101,7 +101,7 @@ export class Bubble {
         bubbleSetId: string;
         type: BubbleType;
         name: string;
-        animationId: string;
+        animation: string;
         soundId: string;
         metadata?: Record<string, unknown>;
     }): Bubble {
@@ -110,7 +110,7 @@ export class Bubble {
             json.bubbleSetId,
             json.type,
             json.name,
-            json.animationId,
+            json.animation,
             json.soundId,
             json.metadata || {}
         );

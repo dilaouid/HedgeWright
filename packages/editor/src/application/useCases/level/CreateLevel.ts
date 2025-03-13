@@ -63,8 +63,6 @@ export async function createNewCase(caseData: NewCaseData): Promise<Project> {
         crossExaminations: [],
         messages: [],
         events: [],
-        assets: [],
-        music: [],
         characters: [],
         backgrounds: []
     };

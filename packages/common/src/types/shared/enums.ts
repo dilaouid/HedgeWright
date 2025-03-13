@@ -48,13 +48,6 @@ export enum EvidenceBehavior {
   NONE = "none"
 }
 
-export enum AssetType {
-  IMAGE = "image",
-  SPRITE = "sprite",
-  ANIMATION = "animation",
-  SOUND = "sound"
-}
-
 export enum MusicType {
   BGM = "bgm",
   SFX = "sfx",

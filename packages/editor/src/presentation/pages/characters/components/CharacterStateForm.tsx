@@ -4,25 +4,30 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useProjectStore } from '../../../../application/state/project/projectStore';
-import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '../../../components/ui/form';
 import { Input } from '../../../components/ui/input';
 import { Button } from '../../../components/ui/button';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '../../../components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../../../components/ui/card';
 
 interface CharacterStateFormProps {
   state: any | null;
@@ -30,15 +35,28 @@ interface CharacterStateFormProps {
   onCancel: () => void;
 }
 
-export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFormProps) {
+export function CharacterStateForm({
+  state,
+  onSave,
+  onCancel,
+}: CharacterStateFormProps) {
   const { currentProject } = useProjectStore();
 
-  const assets = currentProject?.assets || [];
-  const animations = assets.filter(asset => asset.type === 'animation' || asset.type === 'sprite');
-  const sounds = currentProject?.music.filter(m => m.type === 'sfx') || [];
+  const animationPaths = (currentProject?.folders?.img.characters || []).filter(
+    (path) => {
+      const metadata = currentProject?.assetMetadata?.[path] || {};
+      return (
+        metadata.spriteType === 'idle' ||
+        metadata.spriteType === 'talking' ||
+        metadata.spriteType === 'special'
+      );
+    }
+  );
+
+  const soundPaths = currentProject?.folders?.audio.sfx || [];
 
   const formSchema = z.object({
-    name: z.string().min(1, { message: "Name is required" }),
+    name: z.string().min(1, { message: 'Name is required' }),
     idleAnimationId: z.string().nullable(),
     talkingAnimationId: z.string().nullable(),
     specialAnimationId: z.string().nullable(),
@@ -93,7 +111,7 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
     <Card>
       <CardHeader>
         <CardTitle>
-          {state ? `Edit State: ${state.name}` : "Create New State"}
+          {state ? `Edit State: ${state.name}` : 'Create New State'}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -106,7 +124,10 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                 <FormItem>
                   <FormLabel>State Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g. Normal, Surprised, Angry" {...field} />
+                    <Input
+                      placeholder="e.g. Normal, Surprised, Angry"
+                      {...field}
+                    />
                   </FormControl>
                   <FormDescription>
                     A descriptive name for this character state or expression.
@@ -115,7 +136,7 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                 </FormItem>
               )}
             />
-            
+
             <div className="grid grid-cols-2 gap-6">
               <FormField
                 control={form.control}
@@ -123,9 +144,11 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Idle Animation</FormLabel>
-                    <Select 
-                      value={field.value || ''} 
-                      onValueChange={(value) => field.onChange(value === 'null' ? null : value)}
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={(value) =>
+                        field.onChange(value === 'null' ? null : value)
+                      }
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -134,27 +157,37 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="null">No animation</SelectItem>
-                        {animations.map((anim) => (
-                          <SelectItem key={anim.id} value={anim.id}>
-                            {anim.name}
-                          </SelectItem>
-                        ))}
+                        {animationPaths.map((path) => {
+                          const metadata =
+                            currentProject?.assetMetadata?.[path] || {};
+                          const name =
+                            metadata.displayName ||
+                            path.split('/').pop() ||
+                            path;
+                          return (
+                            <SelectItem key={path} value={path}>
+                              {name}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="talkingAnimationId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Talking Animation</FormLabel>
-                    <Select 
-                      value={field.value || ''} 
-                      onValueChange={(value) => field.onChange(value === 'null' ? null : value)}
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={(value) =>
+                        field.onChange(value === 'null' ? null : value)
+                      }
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -163,11 +196,19 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="null">No animation</SelectItem>
-                        {animations.map((anim) => (
-                          <SelectItem key={anim.id} value={anim.id}>
-                            {anim.name}
-                          </SelectItem>
-                        ))}
+                        {animationPaths.map((path) => {
+                          const metadata =
+                            currentProject?.assetMetadata?.[path] || {};
+                          const name =
+                            metadata.displayName ||
+                            path.split('/').pop() ||
+                            path;
+                          return (
+                            <SelectItem key={path} value={path}>
+                              {name}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -175,7 +216,7 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                 )}
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-6">
               <FormField
                 control={form.control}
@@ -183,9 +224,11 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Special Animation</FormLabel>
-                    <Select 
-                      value={field.value || ''} 
-                      onValueChange={(value) => field.onChange(value === 'null' ? null : value)}
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={(value) =>
+                        field.onChange(value === 'null' ? null : value)
+                      }
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -194,30 +237,41 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="null">No animation</SelectItem>
-                        {animations.map((anim) => (
-                          <SelectItem key={anim.id} value={anim.id}>
-                            {anim.name}
-                          </SelectItem>
-                        ))}
+                        {animationPaths.map((path) => {
+                          const metadata =
+                            currentProject?.assetMetadata?.[path] || {};
+                          const name =
+                            metadata.displayName ||
+                            path.split('/').pop() ||
+                            path;
+                          return (
+                            <SelectItem key={path} value={path}>
+                              {name}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Animation played for special moments (breakdown, introduction, etc.)
+                      Animation played for special moments (breakdown,
+                      introduction, etc.)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="specialSoundId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Special Sound Effect</FormLabel>
-                    <Select 
-                      value={field.value || ''} 
-                      onValueChange={(value) => field.onChange(value === 'null' ? null : value)}
+                    <Select
+                      value={field.value || ''}
+                      onValueChange={(value) =>
+                        field.onChange(value === 'null' ? null : value)
+                      }
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -226,11 +280,19 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="null">No sound</SelectItem>
-                        {sounds.map((sound) => (
-                          <SelectItem key={sound.id} value={sound.id}>
-                            {sound.name}
-                          </SelectItem>
-                        ))}
+                        {soundPaths.map((path) => {
+                          const metadata =
+                            currentProject?.assetMetadata?.[path] || {};
+                          const name =
+                            metadata.displayName ||
+                            path.split('/').pop() ||
+                            path;
+                          return (
+                            <SelectItem key={path} value={path}>
+                              {name}
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormDescription>
@@ -241,37 +303,41 @@ export function CharacterStateForm({ state, onSave, onCancel }: CharacterStateFo
                 )}
               />
             </div>
-            
-            {form.watch('specialSoundId') && form.watch('specialSoundId') !== 'null' && (
-              <FormField
-                control={form.control}
-                name="specialSoundDelay"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Sound Delay (ms)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min={0}
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Delay in milliseconds before playing the sound after animation starts
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            
+
+            {form.watch('specialSoundId') &&
+              form.watch('specialSoundId') !== 'null' && (
+                <FormField
+                  control={form.control}
+                  name="specialSoundDelay"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Sound Delay (ms)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={0}
+                          {...field}
+                          onChange={(e) =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Delay in milliseconds before playing the sound after
+                        animation starts
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
               <Button type="submit">
-                {state ? "Save Changes" : "Create State"}
+                {state ? 'Save Changes' : 'Create State'}
               </Button>
             </div>
           </form>

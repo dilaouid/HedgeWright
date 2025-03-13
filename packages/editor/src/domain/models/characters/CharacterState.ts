@@ -8,30 +8,30 @@ export class CharacterState {
     readonly uuid: string;
     readonly characterId: string;
     readonly name: string;
-    readonly idleAnimationId: string | null;
-    readonly talkingAnimationId: string | null;
-    readonly specialAnimationId: string | null;
-    readonly specialSoundId: string | null;
+    readonly idleAnimation: string | null;
+    readonly talkingAnimation: string | null;
+    readonly specialAnimation: string | null;
+    readonly specialSound: string | null;
     readonly specialSoundDelay: number;
     readonly metadata: Record<string, any>;
 
     constructor(
         characterId: string,
         name: string,
-        idleAnimationId: string | null = null,
-        talkingAnimationId: string | null = null,
-        specialAnimationId: string | null = null,
-        specialSoundId: string | null = null,
+        idleAnimation: string | null = null,
+        talkingAnimation: string | null = null,
+        specialAnimation: string | null = null,
+        specialSound: string | null = null,
         specialSoundDelay: number = 0,
         metadata: Record<string, any> = {}
     ) {
         this.uuid = uuidv4();
         this.characterId = characterId;
         this.name = name;
-        this.idleAnimationId = idleAnimationId;
-        this.talkingAnimationId = talkingAnimationId;
-        this.specialAnimationId = specialAnimationId;
-        this.specialSoundId = specialSoundId;
+        this.idleAnimation = idleAnimation;
+        this.talkingAnimation = talkingAnimation;
+        this.specialAnimation = specialAnimation;
+        this.specialSound = specialSound;
         this.specialSoundDelay = specialSoundDelay;
         this.metadata = metadata;
     }
@@ -43,10 +43,10 @@ export class CharacterState {
         return new CharacterState(
             updates.characterId ?? this.characterId,
             updates.name ?? this.name,
-            updates.idleAnimationId ?? this.idleAnimationId,
-            updates.talkingAnimationId ?? this.talkingAnimationId,
-            updates.specialAnimationId ?? this.specialAnimationId,
-            updates.specialSoundId ?? this.specialSoundId,
+            updates.idleAnimation ?? this.idleAnimation,
+            updates.talkingAnimation ?? this.talkingAnimation,
+            updates.specialAnimation ?? this.specialAnimation,
+            updates.specialSound ?? this.specialSound,
             updates.specialSoundDelay ?? this.specialSoundDelay,
             updates.metadata ?? this.metadata
         );
@@ -56,14 +56,14 @@ export class CharacterState {
      * Checks if this state has a special animation
      */
     hasSpecialAnimation(): boolean {
-        return this.specialAnimationId !== null;
+        return this.specialAnimation !== null;
     }
 
     /**
      * Checks if this state has a special sound effect
      */
     hasSpecialSound(): boolean {
-        return this.specialSoundId !== null;
+        return this.specialSound !== null;
     }
 
     /**
@@ -74,10 +74,10 @@ export class CharacterState {
             uuid: this.uuid,
             characterId: this.characterId,
             name: this.name,
-            idleAnimationId: this.idleAnimationId,
-            talkingAnimationId: this.talkingAnimationId,
-            specialAnimationId: this.specialAnimationId,
-            specialSoundId: this.specialSoundId,
+            idleAnimation: this.idleAnimation,
+            talkingAnimation: this.talkingAnimation,
+            specialAnimation: this.specialAnimation,
+            specialSound: this.specialSound,
             specialSoundDelay: this.specialSoundDelay,
             metadata: this.metadata
         };
@@ -90,10 +90,10 @@ export class CharacterState {
         return new CharacterState(
             json.characterId,
             json.name,
-            json.idleAnimationId,
-            json.talkingAnimationId,
-            json.specialAnimationId,
-            json.specialSoundId,
+            json.idleAnimation,
+            json.talkingAnimation,
+            json.specialAnimation,
+            json.specialSound,
             json.specialSoundDelay,
             json.metadata || {}
         );

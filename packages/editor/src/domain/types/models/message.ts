@@ -1,11 +1,11 @@
 import { BaseNamedModel, BasePositionedModel } from './base';
-import { MessagePosition, Asset } from '@hedgewright/common';
+import { MessagePosition } from '@hedgewright/common';
 import { Character } from '@/domain/models/characters/Character';
 import { TextSegment } from '@/domain/models/messages/TextSegment';
 
 export interface Message extends BaseNamedModel, BasePositionedModel {
   rawText: string;
-  background: Asset; // Référence directe à l'asset
+  backgroundPath: string;
   character?: Character; // Référence directe au personnage
   characterState?: string;
   characterPosition?: string;

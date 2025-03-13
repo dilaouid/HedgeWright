@@ -1,10 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
+
 import { motion } from 'framer-motion';
 import { Search, Trash2, Edit, Eye, Check, X } from 'lucide-react';
-import {
-  useProjectStore,
-  Asset,
-} from '@/application/state/project/projectStore';
+import { useProjectStore } from '@/application/state/project/projectStore';
 import { Button } from '@/presentation/components/ui/button';
 import { Input } from '@/presentation/components/ui/input';
 import { Card } from '@/presentation/components/ui/card';
@@ -15,43 +14,48 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/presentation/components/ui/dialog';
+import { useAssetManager } from '@/application/hooks/assets/useAssetManager';
+import path from 'path-browserify';
 
 type SpriteCategory = 'idle' | 'talking' | 'special' | 'all';
+
+interface SpriteInfo {
+  path: string;
+  name: string;
+  metadata: Record<string, any>;
+  spriteType?: string;
+}
 
 interface CharacterSprites {
   id: string; // character id
   name: string;
   sprites: {
-    idle: Asset[];
-    talking: Asset[];
-    special: Asset[];
+    idle: SpriteInfo[];
+    talking: SpriteInfo[];
+    special: SpriteInfo[];
   };
 }
 
 export function SpriteManager() {
   const { currentProject, updateProject } = useProjectStore();
+  const { updateAssetMetadata } = useAssetManager();
+
   const [category, setCategory] = useState<SpriteCategory>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [characterSprites, setCharacterSprites] = useState<CharacterSprites[]>(
-    []
-  );
+  const [characterSprites, setCharacterSprites] = useState<CharacterSprites[]>([]);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingSprite, setEditingSprite] = useState<Asset | null>(null);
+  const [editingSprite, setEditingSprite] = useState<SpriteInfo | null>(null);
   const [editingCharacter, setEditingCharacter] = useState('');
   const [previewedSprite, setPreviewedSprite] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+
   // Extract sprites from project assets
   useEffect(() => {
     if (currentProject) {
-      // Find all character-related sprites
-      const spriteAssets = currentProject.assets.filter(
-        (asset) =>
-          asset.category === 'sprite' ||
-          asset.category === 'idle' ||
-          asset.category === 'talking' ||
-          asset.category === 'special'
-      );
+      // Find all sprites in the characters folder
+      const spritePaths = currentProject.folders?.img.characters || [];
+      const assetMetadata = currentProject.assetMetadata || {};
 
       // Extract characters and their sprites
       const extractedCharacters: CharacterSprites[] = [];
@@ -72,44 +76,69 @@ export function SpriteManager() {
         }
       });
 
-      // Second pass: match sprites to characters
-      spriteAssets.forEach((asset) => {
-        if (asset.metadata?.characterId) {
-          const charId = asset.metadata.characterId as string;
-          const spriteType = (asset.metadata.spriteType || asset.category) as
+      // Second pass: match sprites to characters by metadata
+      spritePaths.forEach((path) => {
+        const metadata = assetMetadata[path] || {};
+        if (metadata.characterId) {
+          const charId = metadata.characterId as string;
+          const spriteType = (metadata.spriteType || 'idle') as
             | 'idle'
             | 'talking'
             | 'special';
 
           if (charactersMap.has(charId)) {
             const charData = charactersMap.get(charId)!;
+            // Ensure spriteType is one of the allowed keys
             if (
               spriteType === 'idle' ||
               spriteType === 'talking' ||
               spriteType === 'special'
             ) {
-              charData.sprites[spriteType].push(asset);
+              charData.sprites[spriteType].push({
+                path,
+                name:
+                  metadata.displayName ||
+                  path.split('/').pop()?.split('.')[0] ||
+                  path,
+                metadata,
+                spriteType,
+              });
             }
           }
         }
       });
 
       // For sprites without character assignment, create "Unassigned" category
-      const unassignedSprites: Asset[] = spriteAssets.filter(
-        (asset) => !asset.metadata?.characterId
-      );
+      const unassignedSprites: SpriteInfo[] = [];
+
+      for (const path of spritePaths) {
+        if (!assetMetadata[path]?.characterId) {
+          const metadata = assetMetadata[path] || {};
+          const fileName = path.split('/').pop() || '';
+          const baseName = fileName.split('.')[0] || '';
+
+          unassignedSprites.push({
+            path,
+            name: metadata.displayName || baseName || path,
+            metadata,
+            spriteType: (metadata.spriteType as string) || 'idle',
+          });
+        }
+      }
 
       if (unassignedSprites.length > 0) {
         charactersMap.set('unassigned', {
           id: 'unassigned',
           name: 'Unassigned Sprites',
           sprites: {
-            idle: unassignedSprites.filter((a) => a.category === 'idle'),
-            talking: unassignedSprites.filter((a) => a.category === 'talking'),
+            idle: unassignedSprites.filter(
+              (s) => s.spriteType === 'idle' || !s.spriteType
+            ),
+            talking: unassignedSprites.filter(
+              (s) => s.spriteType === 'talking'
+            ),
             special: unassignedSprites.filter(
-              (a) =>
-                a.category === 'special' ||
-                !['idle', 'talking'].includes(a.category || '')
+              (s) => s.spriteType === 'special'
             ),
           },
         });
@@ -117,8 +146,6 @@ export function SpriteManager() {
 
       // Convert map to array
       charactersMap.forEach((char) => extractedCharacters.push(char));
-
-      // Update state with extracted data
       setCharacterSprites(extractedCharacters);
       setIsLoading(false);
     }
@@ -148,24 +175,32 @@ export function SpriteManager() {
     );
   };
 
-  const deleteSprite = (assetId: string) => {
+  const deleteSprite = (spritePath: string) => {
     if (window.confirm('Are you sure you want to delete this sprite?')) {
       // Close preview if open
-      if (previewedSprite === assetId) {
+      if (previewedSprite === spritePath) {
         setPreviewedSprite(null);
       }
 
       updateProject((draft) => {
-        const index = draft.assets.findIndex((a) => a.id === assetId);
-        if (index !== -1) {
-          draft.assets.splice(index, 1);
+        // Remove from folders.img.characters
+        if (draft.folders?.img.characters) {
+          const index = draft.folders.img.characters.indexOf(spritePath);
+          if (index !== -1) {
+            draft.folders.img.characters.splice(index, 1);
+          }
+        }
+
+        // Remove metadata
+        if (draft.assetMetadata && draft.assetMetadata[spritePath]) {
+          delete draft.assetMetadata[spritePath];
         }
       });
     }
   };
 
   // Open edit modal
-  const openEditModal = (sprite: Asset, characterId: string) => {
+  const openEditModal = (sprite: SpriteInfo, characterId: string) => {
     setEditingSprite({ ...sprite });
     setEditingCharacter(characterId);
     setIsEditModalOpen(true);
@@ -176,41 +211,52 @@ export function SpriteManager() {
     if (!editingSprite) return;
 
     updateProject((draft) => {
-      const index = draft.assets.findIndex((a) => a.id === editingSprite.id);
-      if (index !== -1) {
-        // Update basic info
-        draft.assets[index].name = editingSprite.name;
+      if (!draft.assetMetadata) {
+        draft.assetMetadata = {};
+      }
 
-        // Update metadata
-        if (!draft.assets[index].metadata) {
-          draft.assets[index].metadata = {};
+      // Update metadata for the sprite
+      draft.assetMetadata[editingSprite.path] = {
+        ...draft.assetMetadata[editingSprite.path],
+        displayName: editingSprite.name,
+        spriteType: editingSprite.metadata?.spriteType || 'idle',
+        category: 'sprite',
+      };
+
+      // Update character assignment
+      if (editingCharacter !== 'unassigned') {
+        draft.assetMetadata[editingSprite.path].characterId = editingCharacter;
+
+        // Find character name
+        const character = draft.characters.find(
+          (c) => c.id === editingCharacter
+        );
+        if (character) {
+          draft.assetMetadata[editingSprite.path].characterName =
+            character.name;
         }
-
-        // Update character assignment
-        if (editingCharacter !== 'unassigned') {
-          draft.assets[index].metadata.characterId = editingCharacter;
-
-          // Find character name
-          const character = draft.characters.find(
-            (c) => c.id === editingCharacter
-          );
-          if (character) {
-            draft.assets[index].metadata.characterName = character.name;
-          }
-        } else {
-          // Remove character assignment
-          delete draft.assets[index].metadata.characterId;
-          delete draft.assets[index].metadata.characterName;
-        }
-
-        // Update sprite type
-        const spriteType =
-          editingSprite.metadata?.spriteType || editingSprite.category;
-        draft.assets[index].category = spriteType;
-        if (draft.assets[index].metadata) {
-          draft.assets[index].metadata.spriteType = spriteType;
+      } else {
+        // Remove character assignment
+        if (draft.assetMetadata[editingSprite.path]) {
+          delete draft.assetMetadata[editingSprite.path].characterId;
+          delete draft.assetMetadata[editingSprite.path].characterName;
         }
       }
+    });
+
+    // Also update with useAssetManager hook for in-memory state
+    updateAssetMetadata(editingSprite.path, {
+      displayName: editingSprite.name,
+      spriteType: editingSprite.metadata?.spriteType || 'idle',
+      category: 'sprite',
+      ...(editingCharacter !== 'unassigned'
+        ? {
+            characterId: editingCharacter,
+            characterName: currentProject?.characters.find(
+              (c) => c.id === editingCharacter
+            )?.name,
+          }
+        : {}),
     });
 
     setIsEditModalOpen(false);
@@ -218,18 +264,18 @@ export function SpriteManager() {
   };
 
   // Toggle sprite preview
-  const togglePreview = (assetId: string) => {
-    if (previewedSprite === assetId) {
+  const togglePreview = (spritePath: string) => {
+    if (previewedSprite === spritePath) {
       setPreviewedSprite(null);
     } else {
-      setPreviewedSprite(assetId);
+      setPreviewedSprite(spritePath);
     }
   };
-
-  // Get asset path for display
-  const getAssetPath = (assetId: string) => {
-    const asset = currentProject?.assets.find((a) => a.id === assetId);
-    return asset?.path || '';
+  
+  const filteredCharacters = getFilteredSprites();
+  const getAssetPath = (relativePath: string) => {
+    if (!relativePath || !currentProject?.projectFolderPath) return '';
+    return path.join(currentProject.projectFolderPath, relativePath);
   };
 
   if (isLoading) {
@@ -240,7 +286,6 @@ export function SpriteManager() {
     );
   }
 
-  const filteredCharacters = getFilteredSprites();
 
   return (
     <div className="space-y-4">
@@ -292,12 +337,11 @@ export function SpriteManager() {
         </div>
       </div>
 
-      {/* Sprites by character */}
       {filteredCharacters.length > 0 ? (
         <div className="space-y-6">
           {filteredCharacters.map((character) => {
             // Get sprites based on current category filter
-            let spritesToShow: Asset[] = [];
+            let spritesToShow: SpriteInfo[] = [];
             if (category === 'all') {
               spritesToShow = [
                 ...character.sprites.idle,
@@ -322,23 +366,23 @@ export function SpriteManager() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {spritesToShow.map((sprite) => (
                     <Card
-                      key={sprite.id}
+                      key={sprite.path}
                       className={`bg-blue-950 border-blue-800 overflow-hidden ${
-                        previewedSprite === sprite.id
+                        previewedSprite === sprite.path
                           ? 'ring-2 ring-yellow-500'
                           : ''
                       }`}
                     >
                       <div className="relative aspect-square bg-blue-900/30 flex items-center justify-center overflow-hidden">
                         <img
-                          src={sprite.path}
+                          src={getAssetPath(sprite.path)}
                           alt={sprite.name}
                           className="max-w-full max-h-full object-contain"
                         />
 
                         {/* Category badge */}
                         <div className="absolute top-2 right-2 bg-blue-900/80 text-xs px-2 py-1 rounded text-blue-200">
-                          {sprite.category || 'sprite'}
+                          {sprite.spriteType || 'sprite'}
                         </div>
 
                         {/* Preview button */}
@@ -346,9 +390,9 @@ export function SpriteManager() {
                           variant="outline"
                           size="icon"
                           className="absolute bottom-2 right-2 h-8 w-8 bg-blue-950/90 border-blue-800 text-blue-300 hover:bg-blue-900 hover:text-white"
-                          onClick={() => togglePreview(sprite.id)}
+                          onClick={() => togglePreview(sprite.path)}
                         >
-                          {previewedSprite === sprite.id ? (
+                          {previewedSprite === sprite.path ? (
                             <X className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />
@@ -376,7 +420,7 @@ export function SpriteManager() {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-red-400 hover:text-red-300"
-                              onClick={() => deleteSprite(sprite.id)}
+                              onClick={() => deleteSprite(sprite.path)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -384,7 +428,7 @@ export function SpriteManager() {
                         </div>
 
                         <div className="text-xs text-blue-400 mt-1 truncate">
-                          {sprite.path.split('/').pop() || sprite.path}
+                          {path.basename(sprite.path)}
                         </div>
                       </div>
                     </Card>
@@ -457,7 +501,7 @@ export function SpriteManager() {
               <div className="flex justify-center mb-4">
                 <div className="w-32 h-32 bg-blue-900/30 rounded-md flex items-center justify-center overflow-hidden">
                   <img
-                    src={editingSprite.path}
+                    src={getAssetPath(editingSprite.path)}
                     alt={editingSprite.name}
                     className="max-w-full max-h-full object-contain"
                   />
@@ -483,18 +527,18 @@ export function SpriteManager() {
                 </label>
                 <select
                   value={
-                    editingSprite.metadata?.spriteType || editingSprite.category
+                    editingSprite.metadata?.spriteType || 'idle'
                   }
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setEditingSprite({
                       ...editingSprite,
-                      category: e.target.value,
                       metadata: {
                         ...(editingSprite.metadata || {}),
                         spriteType: e.target.value,
                       },
-                    })
-                  }
+                      spriteType: e.target.value
+                    });
+                  }}
                   className="w-full bg-blue-900/30 border border-blue-700 rounded-md p-2 text-white"
                 >
                   <option value="idle">Idle Animation</option>

@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Search,
-  Trash2,
-  Edit,
-  Check,
-  Star,
-} from 'lucide-react';
-import {
-  useProjectStore,
-  Asset,
-} from '@/application/state/project/projectStore';
+import { Search, Trash2, Edit, Check, Star } from 'lucide-react';
+import { useProjectStore } from '@/application/state/project/projectStore';
 import { Button } from '@/presentation/components/ui/button';
 import { Input } from '@/presentation/components/ui/input';
 import { Card } from '@/presentation/components/ui/card';
@@ -19,44 +10,61 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/presentation/components/ui/dialog';
+import { useAssetManager } from '@/application/hooks/assets/useAssetManager';
+import path from 'path-browserify';
+import AssetPathDisplay from './AssetPathDisplay';
+
+// Define a background with metadata
+interface Background {
+  path: string; // Relative file path
+  relativePath: string; // Same as path but explicitly for display
+  displayName?: string; // User-friendly name (defaults to filename)
+  location?: string; // Category/location of background
+  description?: string; // Optional description
+  inUse?: boolean; // Whether this background is used in scenes
+}
 
 interface BackgroundCategory {
   id: string;
   name: string;
-  backgrounds: Asset[];
+  backgrounds: Background[];
 }
 
 export function BackgroundManager() {
   const { currentProject, updateProject } = useProjectStore();
+  const { assets, resolveAssetPath, updateAssetMetadata } = useAssetManager();
   const [searchTerm, setSearchTerm] = useState('');
   const [backgroundCategories, setBackgroundCategories] = useState<
     BackgroundCategory[]
   >([]);
-  const [editingBackground, setEditingBackground] = useState<Asset | null>(
+  const [editingBackground, setEditingBackground] = useState<Background | null>(
     null
   );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
 
-  // Extract backgrounds from project assets
+  // Extract backgrounds from assets
   useEffect(() => {
-    if (currentProject) {
+    if (currentProject && assets.length > 0) {
       // Find all background assets
-      const backgroundAssets = currentProject.assets.filter(
+      const backgroundAssets = assets.filter(
         (asset) =>
-          asset.category === 'background' || asset.metadata?.isBackground
+          asset.metadata?.category === 'background' ||
+          asset.relativePath.includes('/backgrounds/')
       );
 
-      console.log(currentProject.assets);
-      
+      console.log(`Found ${backgroundAssets.length} backgrounds`);
 
-      // Group backgrounds by location/category
+      // Group backgrounds by location/category from metadata or default to "Uncategorized"
       const categoriesMap = new Map<string, BackgroundCategory>();
 
       backgroundAssets.forEach((asset) => {
         const location =
           (asset.metadata?.location as string) || 'Uncategorized';
+        const fileName = path.basename(asset.relativePath);
+        const displayName =
+          asset.metadata?.displayName ||
+          path.basename(fileName, path.extname(fileName));
 
         if (!categoriesMap.has(location)) {
           categoriesMap.set(location, {
@@ -66,7 +74,19 @@ export function BackgroundManager() {
           });
         }
 
-        categoriesMap.get(location)?.backgrounds.push(asset);
+        // Check if this background is used in any scenes
+        const inUse = currentProject?.scenes?.some((scene) => {
+          return scene.background === asset.relativePath;
+        }) || false;
+
+        categoriesMap.get(location)?.backgrounds.push({
+          path: asset.relativePath,
+          relativePath: asset.relativePath,
+          displayName: displayName,
+          location: location,
+          description: asset.metadata?.description as string,
+          inUse: inUse,
+        });
       });
 
       // Convert map to array and sort alphabetically
@@ -80,17 +100,26 @@ export function BackgroundManager() {
       setBackgroundCategories(categories);
       setIsLoading(false);
     }
-  }, [currentProject]);
+  }, [currentProject, assets]);
 
   // Filter backgrounds based on search term
   const getFilteredCategories = () => {
+    if (searchTerm.trim() === '') {
+      return backgroundCategories;
+    }
+    
     return backgroundCategories
       .map((category) => ({
         ...category,
         backgrounds: category.backgrounds.filter(
           (bg) =>
-            bg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            ((bg.metadata?.description as string) || '')
+            (bg.displayName || '')
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            (bg.description || '')
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            (bg.location || '')
               .toLowerCase()
               .includes(searchTerm.toLowerCase())
         ),
@@ -98,26 +127,24 @@ export function BackgroundManager() {
       .filter((category) => category.backgrounds.length > 0);
   };
 
-  // Delete background
-  const deleteBackground = (backgroundId: string) => {
-    if (window.confirm('Are you sure you want to delete this background?')) {
+  // Delete background (note: this doesn't delete the file, just removes from metadata if any)
+  const deleteBackground = (backgroundPath: string) => {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this background's metadata? This won't delete the actual file."
+      )
+    ) {
       updateProject((draft) => {
-        const index = draft.assets.findIndex((a) => a.id === backgroundId);
-        if (index !== -1) {
-          draft.assets.splice(index, 1);
-        }
-
-        // Also remove from backgrounds array if present
-        const bgIndex = draft.backgrounds.indexOf(backgroundId);
-        if (bgIndex !== -1) {
-          draft.backgrounds.splice(bgIndex, 1);
+        // Update asset metadata to remove any background-specific data
+        if (draft.assetMetadata && draft.assetMetadata[backgroundPath]) {
+          delete draft.assetMetadata[backgroundPath];
         }
       });
     }
   };
 
   // Open edit modal
-  const openEditModal = (background: Asset) => {
+  const openEditModal = (background: Background) => {
     setEditingBackground({ ...background });
     setIsEditModalOpen(true);
   };
@@ -127,37 +154,35 @@ export function BackgroundManager() {
     if (!editingBackground) return;
 
     updateProject((draft) => {
-      const index = draft.assets.findIndex(
-        (a) => a.id === editingBackground.id
-      );
-      if (index !== -1) {
-        // Update basic info
-        draft.assets[index].name = editingBackground.name;
-
-        // Update metadata
-        if (!draft.assets[index].metadata) {
-          draft.assets[index].metadata = {};
-        }
-
-        draft.assets[index].metadata.location =
-          editingBackground.metadata?.location || 'Uncategorized';
-        draft.assets[index].metadata.description =
-          editingBackground.metadata?.description || '';
-        draft.assets[index].metadata.isBackground = true;
-
-        // Ensure category is set
-        draft.assets[index].category = 'background';
-
-        // Add to backgrounds array if not already there
-        if (!draft.backgrounds.includes(editingBackground.id)) {
-          draft.backgrounds.push(editingBackground.id);
-        }
+      // Create or update metadata entry for this path
+      if (!draft.assetMetadata) {
+        draft.assetMetadata = {};
       }
+
+      // Update the metadata
+      draft.assetMetadata[editingBackground.path] = {
+        ...(draft.assetMetadata[editingBackground.path] || {}),
+        displayName: editingBackground.displayName,
+        description: editingBackground.description,
+        location: editingBackground.location || 'Uncategorized',
+        category: 'background',
+      };
+    });
+
+    // Also update in-memory asset metadata
+    updateAssetMetadata(editingBackground.path, {
+      displayName: editingBackground.displayName,
+      description: editingBackground.description,
+      location: editingBackground.location || 'Uncategorized',
+      category: 'background'
     });
 
     setIsEditModalOpen(false);
     setEditingBackground(null);
   };
+
+  // Chemin complet du dossier des backgrounds
+  const backgroundFolderPath = currentProject?.projectFolderPath + '/img/backgrounds';
 
   if (isLoading) {
     return (
@@ -166,12 +191,12 @@ export function BackgroundManager() {
       </div>
     );
   }
-  
 
   const filteredCategories = getFilteredCategories();
 
   return (
     <div className="space-y-4">
+      {backgroundFolderPath && <AssetPathDisplay folderPath={backgroundFolderPath} />}
       {/* Search controls */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-blue-900/30 p-4 rounded-lg">
         <div>
@@ -208,23 +233,22 @@ export function BackgroundManager() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {category.backgrounds.map((bg) => (
                   <Card
-                    key={bg.id}
+                    key={bg.path}
                     className="bg-blue-950 border-blue-800 overflow-hidden"
                   >
                     <div className="relative aspect-video bg-blue-900/30 flex items-center justify-center overflow-hidden">
                       <img
-                        src={bg.path}
-                        alt={bg.name}
+                        src={resolveAssetPath(bg.path)}
+                        alt={bg.displayName || path.basename(bg.path)}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = '/assets/images/ui/placeholder.png';
+                          e.currentTarget.alt = 'Failed to load image';
+                        }}
                       />
 
                       {/* Used indicator */}
-                      {currentProject?.scenes.some((sceneId) => {
-                        const scene = currentProject?.assets.find(
-                          (a) => a.id === sceneId
-                        );
-                        return scene?.metadata?.backgroundId === bg.id;
-                      }) && (
+                      {bg.inUse && (
                         <div className="absolute top-2 left-2 bg-yellow-600/90 text-xs px-2 py-1 rounded-full text-white flex items-center gap-1">
                           <Star className="h-3 w-3" />
                           Used in scenes
@@ -235,7 +259,7 @@ export function BackgroundManager() {
                     <div className="p-3">
                       <div className="flex justify-between items-start">
                         <h4 className="text-white font-medium truncate">
-                          {bg.name}
+                          {bg.displayName || path.basename(bg.path)}
                         </h4>
                         <div className="flex gap-1">
                           <Button
@@ -250,16 +274,16 @@ export function BackgroundManager() {
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-red-400 hover:text-red-300"
-                            onClick={() => deleteBackground(bg.id)}
+                            onClick={() => deleteBackground(bg.path)}
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
 
-                      {bg.metadata?.description && (
+                      {bg.description && (
                         <p className="text-xs text-blue-300 mt-1 line-clamp-2">
-                          {bg.metadata.description as string}
+                          {bg.description}
                         </p>
                       )}
                     </div>
@@ -275,7 +299,7 @@ export function BackgroundManager() {
           <p className="text-blue-400 text-sm mb-4">
             {searchTerm
               ? 'Try a different search term'
-              : 'Import background images using the Import Assets button above'}
+              : 'Add background images to the img/backgrounds folder in your project'}
           </p>
         </div>
       )}
@@ -296,9 +320,16 @@ export function BackgroundManager() {
             <div className="space-y-4 pt-2">
               <div className="relative aspect-video bg-blue-900/30 rounded-md flex items-center justify-center overflow-hidden mb-4">
                 <img
-                  src={editingBackground.path}
-                  alt={editingBackground.name}
+                  src={resolveAssetPath(editingBackground.path)}
+                  alt={
+                    editingBackground.displayName ||
+                    path.basename(editingBackground.path)
+                  }
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = '/assets/images/ui/placeholder.png';
+                    e.currentTarget.alt = 'Failed to load';
+                  }}
                 />
               </div>
 
@@ -307,11 +338,17 @@ export function BackgroundManager() {
                   Background Name
                 </label>
                 <Input
-                  value={editingBackground.name}
+                  value={
+                    editingBackground.displayName ||
+                    path.basename(
+                      editingBackground.path,
+                      path.extname(editingBackground.path)
+                    )
+                  }
                   onChange={(e) =>
                     setEditingBackground({
                       ...editingBackground,
-                      name: e.target.value,
+                      displayName: e.target.value,
                     })
                   }
                   className="bg-blue-900/30 border-blue-700 text-white"
@@ -323,14 +360,11 @@ export function BackgroundManager() {
                   Location/Category
                 </label>
                 <Input
-                  value={(editingBackground.metadata?.location as string) || ''}
+                  value={editingBackground.location || ''}
                   onChange={(e) =>
                     setEditingBackground({
                       ...editingBackground,
-                      metadata: {
-                        ...(editingBackground.metadata || {}),
-                        location: e.target.value,
-                      },
+                      location: e.target.value,
                     })
                   }
                   placeholder="e.g., Courtroom, Detention Center, Office"
@@ -343,16 +377,11 @@ export function BackgroundManager() {
                   Description
                 </label>
                 <textarea
-                  value={
-                    (editingBackground.metadata?.description as string) || ''
-                  }
+                  value={editingBackground.description || ''}
                   onChange={(e) =>
                     setEditingBackground({
                       ...editingBackground,
-                      metadata: {
-                        ...(editingBackground.metadata || {}),
-                        description: e.target.value,
-                      },
+                      description: e.target.value,
                     })
                   }
                   rows={3}
@@ -381,7 +410,6 @@ export function BackgroundManager() {
           )}
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

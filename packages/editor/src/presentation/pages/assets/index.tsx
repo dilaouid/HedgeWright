@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   MessageSquare,
@@ -26,26 +26,41 @@ import { BackgroundManager } from './components/BackgroundManager';
 import { EvidenceProfileManager } from './components/EvidenceProfileManager';
 import { SpecialAnimationManager } from './components/SpecialAnimationManager';
 import { ImportAssetModal } from './components/ImportAssetModal';
+import { useAssetManager } from '@/application/hooks/assets/useAssetManager';
 
 export function AssetsPage() {
   const { currentProject } = useProjectStore();
+  const { getAssetCounts, loadAssets } = useAssetManager();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('bubbles');
+  const [counts, setCounts] = useState({
+    bubbles: 0,
+    audio: 0,
+    sprites: 0,
+    backgrounds: 0,
+    evidence: 0,
+    profiles: 0,
+    specialAnimations: 0,
+  });
 
-  // Count different asset types for display in tabs
-  const bubbleCount =
-    currentProject?.assets?.filter((a) => a.category === 'bubble')?.length || 0;
-  const musicCount = currentProject?.music?.length || 0;
-  const spriteCount =
-    currentProject?.assets?.filter((a) => a.category === 'character')?.length || 0;
-  const backgroundCount =
-    currentProject?.assets?.filter((a) => a.category === 'background')
-      ?.length || 0;
-  const evidenceCount = currentProject?.evidence?.length || 0;
-  const profileCount = currentProject?.profiles?.length || 0;
-  const specialAnimCount =
-    currentProject?.assets?.filter((a) => a.category === 'effect')?.length ||
-    0;
+  // Force asset reload when component mounts
+  useEffect(() => {
+    loadAssets();
+  }, [loadAssets]);
+
+  // Update counts from asset manager
+  useEffect(() => {
+    const assetCounts = getAssetCounts();
+    setCounts({
+      bubbles: assetCounts.bubbles || 0,
+      audio: assetCounts.audio || 0,
+      sprites: assetCounts.characters || 0,
+      backgrounds: assetCounts.backgrounds || 0,
+      evidence: assetCounts.evidence || 0,
+      profiles: assetCounts.profiles || 0,
+      specialAnimations: assetCounts.specialAnimations || 0,
+    });
+  }, [getAssetCounts, currentProject]);
 
   if (!currentProject) {
     return <div className="p-8 text-center text-white">No project loaded</div>;
@@ -109,7 +124,7 @@ export function AssetsPage() {
                   <MessageSquare className="w-4 h-4 mr-2" />
                   <span>Bubbles</span>
                   <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                    {bubbleCount}
+                    {counts.bubbles}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger
@@ -119,7 +134,7 @@ export function AssetsPage() {
                   <Music className="w-4 h-4 mr-2" />
                   <span>Music & SFX</span>
                   <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                    {musicCount}
+                    {counts.audio}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger
@@ -129,7 +144,7 @@ export function AssetsPage() {
                   <User className="w-4 h-4 mr-2" />
                   <span>Sprites</span>
                   <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                    {spriteCount}
+                    {counts.sprites}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger
@@ -139,7 +154,7 @@ export function AssetsPage() {
                   <ImageIcon className="w-4 h-4 mr-2" />
                   <span>Backgrounds</span>
                   <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                    {backgroundCount}
+                    {counts.backgrounds}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger
@@ -149,7 +164,7 @@ export function AssetsPage() {
                   <FileBadge className="w-4 h-4 mr-2" />
                   <span>Evidence & Profiles</span>
                   <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                    {evidenceCount + profileCount}
+                    {counts.evidence + counts.profiles}
                   </span>
                 </TabsTrigger>
                 <TabsTrigger
@@ -159,7 +174,7 @@ export function AssetsPage() {
                   <Sparkles className="w-4 h-4 mr-2" />
                   <span>Special Animations</span>
                   <span className="ml-2 bg-blue-800 text-xs px-1.5 py-0.5 rounded-md">
-                    {specialAnimCount}
+                    {counts.specialAnimations}
                   </span>
                 </TabsTrigger>
               </TabsList>

@@ -1,5 +1,6 @@
 // packages\editor\src\application\state\project\projectStore.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Scene } from '@/domain/models/investigations/Scene';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
@@ -57,16 +58,6 @@ export interface ProjectVariable {
     description?: string;
 }
 
-export interface Asset {
-    id: string;
-    name: string;
-    type: string;
-    path: string;
-    relativePath?: string; // Path relative to project folder for portability
-    category?: string; // e.g., 'background', 'character', 'evidence'
-    metadata?: Record<string, any>;
-}
-
 export interface Character {
     id: string;
     name: string;
@@ -88,7 +79,6 @@ export interface CharacterState {
 }
 
 export interface Music {
-    id: string;
     name: string;
     path: string;
     relativePath?: string; // Path relative to project folder
@@ -107,7 +97,7 @@ export interface FolderStructure {
         backgrounds: string[];
         characters: string[];
         profiles: string[];
-        evidence: string[];
+        evidences: string[];
         ui: string[];
         effects: string[];
     };
@@ -122,7 +112,7 @@ export interface ProjectData {
     lastModified: string;
     projectFolderPath: string; // Required - path to the project folder
     folders?: FolderStructure; // Optional structure to track folder contents
-    scenes: string[]; // Array of scene IDs
+    scenes: Scene[]; // Array of scene IDs
     investigations: string[]; // Array of investigation IDs
     dialogues: string[]; // Array of dialogue IDs 
     crossExaminations: string[]; // Array of cross-examination IDs
@@ -130,13 +120,17 @@ export interface ProjectData {
     events: string[]; // Array of event IDs
     evidence: string[]; // Array of evidence IDs
     profiles: string[]; // Array of profile IDs
-    assets: Asset[]; // Array of assets
-    music: Music[]; // Array of music/sound files
     characters: Character[]; // Array of characters
     backgrounds: string[]; // Array of background IDs
     variables: ProjectVariable[];
     timeline: TimelineData;
     settings: ProjectSettings;
+    assetMetadata?: Record<string, {
+        displayName?: string;
+        category?: string;
+        [key: string]: any;
+    }>;
+
 }
 
 interface ProjectState {
@@ -165,7 +159,7 @@ const createDefaultFolderStructure = (): FolderStructure => ({
         backgrounds: [],
         characters: [],
         profiles: [],
-        evidence: [],
+        evidences: [],
         ui: [],
         effects: []
     },
@@ -179,8 +173,6 @@ const normalizeProject = (project: Partial<ProjectData>): ProjectData => {
         ...project,
         projectFolderPath: project.projectFolderPath || '',
         folders: project.folders || createDefaultFolderStructure(),
-        assets: project.assets || [],
-        music: project.music || [],
         characters: project.characters || [],
         backgrounds: project.backgrounds || [],
         // Ensure all required arrays exist
@@ -199,7 +191,8 @@ const normalizeProject = (project: Partial<ProjectData>): ProjectData => {
             author: '',
             version: '1.0.0',
             resolution: { width: 1280, height: 720 }
-        }
+        },
+        assetMetadata: project.assetMetadata || {}
     } as ProjectData;
 };
 

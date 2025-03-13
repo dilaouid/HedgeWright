@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { motion } from 'framer-motion';
 import { Upload, X, FileCheck, AlertTriangle } from 'lucide-react';
 import {
@@ -9,11 +8,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/presentation/components/ui/dialog';
-import {
-  useProjectStore,
-  Asset,
-  Music,
-} from '@/application/state/project/projectStore';
+import { useProjectStore } from '@/application/state/project/projectStore';
 import { Button } from '@/presentation/components/ui/button';
 import { Input } from '@/presentation/components/ui/input';
 import { Label } from '@/presentation/components/ui/label';
@@ -25,6 +20,7 @@ import {
   SelectValue,
 } from '@/presentation/components/ui/select';
 import { useIpcService } from '@/infrastructure/electron/services/useIpcService';
+import { useAssetManager } from '@/application/hooks/assets/useAssetManager';
 
 interface ImportAssetModalProps {
   isOpen: boolean;
@@ -38,6 +34,7 @@ export function ImportAssetModal({
   category,
 }: ImportAssetModalProps) {
   const { updateProject, currentProject } = useProjectStore();
+  const { loadAssets } = useAssetManager();
   const [files, setFiles] = useState<File[]>([]);
   const [assetNames, setAssetNames] = useState<{ [key: string]: string }>({});
   const [assetTypes, setAssetTypes] = useState<{ [key: string]: string }>({});
@@ -223,7 +220,7 @@ export function ImportAssetModal({
         } else if (category === 'backgrounds') {
           targetFolder = 'img/backgrounds';
         } else if (category === 'evidence') {
-          targetFolder = 'img/evidence';
+          targetFolder = 'img/evidences';
         } else if (category === 'bubbles') {
           targetFolder = 'img/effects';
         } else if (category === 'special') {
@@ -241,56 +238,139 @@ export function ImportAssetModal({
           targetFolder: targetFolder,
           projectPath: currentProject.projectFolderPath,
         });
-        const relativePath = savedPath.replace(/\//g, '\\');
-        const absolutePath = `${currentProject.projectFolderPath}\\${relativePath}`;
 
-        // Update project store with the new asset
+        // This is the path relative to the project folder
+        const relativePath = savedPath;
+
+        // Update project store with metadata for the new asset
         updateProject((draft) => {
-          const assetId = uuidv4(); // Use UUID instead of nanoid for properly formatted UUIDs
           const assetName = assetNames[file.name] || file.name;
 
-          // For music files
+          // Initialize assetMetadata if it doesn't exist
+          if (!draft.assetMetadata) {
+            draft.assetMetadata = {};
+          }
+
+          // For music files, add to appropriate folder arrays
           if (
             category === 'music' ||
-            fileExt === 'mp3' ||
-            fileExt === 'wav' ||
-            fileExt === 'ogg'
+            ['mp3', 'wav', 'ogg'].includes(fileExt || '')
           ) {
-            const musicAsset: Music = {
-              id: assetId,
-              name: assetName,
-              path: absolutePath,
-              type: assetType,
-              relativePath: relativePath,
+            // Update folder structure to include this audio file
+            if (!draft.folders) {
+              draft.folders = {
+                audio: { bgm: [], sfx: [], voices: [] },
+                img: {
+                  backgrounds: [],
+                  characters: [],
+                  profiles: [],
+                  evidences: [],
+                  ui: [],
+                  effects: [],
+                },
+                documents: [],
+                data: [],
+              };
+            }
+
+            // Add to the appropriate audio folder list
+            if (
+              assetType === 'bgm' &&
+              !draft.folders.audio.bgm.includes(relativePath)
+            ) {
+              draft.folders.audio.bgm.push(relativePath);
+            } else if (
+              assetType === 'sfx' &&
+              !draft.folders.audio.sfx.includes(relativePath)
+            ) {
+              draft.folders.audio.sfx.push(relativePath);
+            } else if (
+              assetType === 'voice' &&
+              !draft.folders.audio.voices.includes(relativePath)
+            ) {
+              draft.folders.audio.voices.push(relativePath);
+            }
+
+            // Store metadata
+            draft.assetMetadata[relativePath] = {
+              displayName: assetName,
+              category: assetType,
+              type: 'audio',
               loop: assetType === 'bgm',
             };
-            draft.music.push(musicAsset);
           }
           // For all other assets
           else {
-            const asset: Asset = {
-              id: assetId,
-              name: assetName,
-              type: fileExt || 'image',
-              path: absolutePath,
-              relativePath: relativePath,
-              category: assetType,
-              metadata: {
-                relativePath: relativePath,
-                category: assetType,
-              },
-            };
-            draft.assets.push(asset);
+            // Update folder structure to include this image file
+            if (!draft.folders) {
+              draft.folders = {
+                audio: { bgm: [], sfx: [], voices: [] },
+                img: {
+                  backgrounds: [],
+                  characters: [],
+                  profiles: [],
+                  evidences: [],
+                  ui: [],
+                  effects: [],
+                },
+                documents: [],
+                data: [],
+              };
+            }
 
-            // For evidence/profiles, also create the corresponding evidence/profile entry
-            if (category === 'evidence' && assetType === 'evidence') {
-              draft.evidence.push(assetId);
-            } else if (category === 'evidence' && assetType === 'profile') {
-              draft.profiles.push(assetId);
+            // Add to the appropriate image folder list
+            if (
+              category === 'backgrounds' &&
+              !draft.folders.img.backgrounds.includes(relativePath)
+            ) {
+              draft.folders.img.backgrounds.push(relativePath);
+            } else if (
+              category === 'sprites' &&
+              !draft.folders.img.characters.includes(relativePath)
+            ) {
+              draft.folders.img.characters.push(relativePath);
+            } else if (
+              assetType === 'evidence' &&
+              !draft.folders.img.evidences.includes(relativePath)
+            ) {
+              draft.folders.img.evidences.push(relativePath);
+            } else if (
+              assetType === 'profile' &&
+              !draft.folders.img.profiles.includes(relativePath)
+            ) {
+              draft.folders.img.profiles.push(relativePath);
+            } else if (
+              (category === 'bubbles' || category === 'special') &&
+              !draft.folders.img.effects.includes(relativePath)
+            ) {
+              draft.folders.img.effects.push(relativePath);
+            }
+
+            // Store metadata
+            draft.assetMetadata[relativePath] = {
+              displayName: assetName,
+              category: assetType,
+              type: 'image',
+              location:
+                category === 'backgrounds' ? 'Uncategorized' : undefined,
+            };
+
+            // For evidence/profiles, also create the corresponding evidence/profile entry if needed
+            if (assetType === 'evidence') {
+              // Here you would create an evidence reference - this depends on your specific implementation
+              // For example, if you track evidences by path rather than ID:
+              // if (!draft.evidence.includes(relativePath)) {
+              //   draft.evidence.push(relativePath);
+              // }
+            } else if (assetType === 'profile') {
+              // Similar approach for profiles
             }
           }
         });
       }
+
+      // Refresh asset list after import
+      loadAssets();
 
       // Close the modal after successful import
       onClose();

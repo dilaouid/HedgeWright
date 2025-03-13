@@ -19,22 +19,26 @@ import { motion } from 'framer-motion';
 import { useProjectStore } from '@/application/state/project/projectStore';
 import { ModuleCard } from './components/ModuleCard';
 import { QuickAccessPanel } from './components/QuickAccessPanel';
+import { useAssetManager } from '@/application/hooks/assets/useAssetManager';
 
 export function EditorPage() {
   const navigate = useNavigate();
   const { currentProject } = useProjectStore();
+  const { getAssetCounts } = useAssetManager();
+
+  const { total } = getAssetCounts();
 
   // Fix for focus/scroll issues - ensure everything is properly mounted
   useEffect(() => {
     // Reset any trapped focus/scroll states
     document.body.style.overflow = 'auto';
-    
+
     // Add the class to make scrolling work properly
     const editorContent = document.getElementById('editor-content');
     if (editorContent) {
       editorContent.classList.add('scrollbar-ace');
     }
-    
+
     return () => {
       // Cleanup on unmount
       document.body.style.overflow = '';
@@ -50,15 +54,12 @@ export function EditorPage() {
     return null;
   }
 
-  // Get asset count (missing from the project state)
-  const assetCount = 
-    (currentProject.assets?.length || 0) + 
-    (currentProject.music?.length || 0) + 
-    (currentProject.backgrounds?.length || 0);
+  // Get asset count
+  const assetCount = total;
 
-  // Get character count (missing from the project state)
-  const characterCount = 
-    (currentProject.characters?.length || 0) + 
+  // Get character count
+  const characterCount =
+    (currentProject.characters?.length || 0) +
     (currentProject.profiles?.length || 0);
 
   const projectModules = [
@@ -116,7 +117,7 @@ export function EditorPage() {
       icon: <ImageIcon className="h-10 w-10" />,
       description: 'Manage images, sprites, and backgrounds',
       path: '/assets',
-      count: assetCount, 
+      count: assetCount || 0,
     },
     {
       name: 'Switches',
@@ -128,13 +129,13 @@ export function EditorPage() {
   ];
 
   return (
-    <div 
+    <div
       id="editor-content"
       className="p-4 md:p-6 pb-12 editor-stats-container scrollbar-ace"
     >
       <div className="container-ace space-y-6">
         {/* Ace Attorney style header */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -142,7 +143,7 @@ export function EditorPage() {
         >
           {/* Background pattern to mimic Ace Attorney UI */}
           <div className="absolute inset-0 bg-[url('/assets/images/ui/nds-pattern.png')] opacity-5" />
-          
+
           <div className="relative z-10 p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
@@ -153,20 +154,22 @@ export function EditorPage() {
                   <div className="flex items-center gap-1">
                     <LayoutDashboard className="w-4 h-4" />
                     <span>
-                      Last modified: {new Date(currentProject.lastModified).toLocaleString()}
+                      Last modified:{' '}
+                      {new Date(currentProject.lastModified).toLocaleString()}
                     </span>
                   </div>
                   <span className="hidden sm:inline-block">•</span>
                   <div className="flex items-center gap-1">
                     <FileJson className="w-4 h-4" />
                     <span>
-                      Created: {new Date(currentProject.createdAt).toLocaleString()}
+                      Created:{' '}
+                      {new Date(currentProject.createdAt).toLocaleString()}
                     </span>
                   </div>
                 </div>
               </div>
-              
-              <motion.button 
+
+              <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className="btn-ace-secondary flex items-center justify-center gap-2 px-6"
@@ -179,9 +182,9 @@ export function EditorPage() {
         </motion.div>
 
         {/* Quick access panel */}
-        <QuickAccessPanel 
+        <QuickAccessPanel
           characterCount={characterCount}
-          assetCount={assetCount}
+          assetCount={total || 0}
           switchCount={currentProject.variables.length}
           investigationCount={currentProject.investigations.length}
           sceneCount={currentProject.scenes.length}
@@ -190,7 +193,9 @@ export function EditorPage() {
 
         {/* Module cards */}
         <div>
-          <h2 className="text-xl font-ace text-white mb-4 tracking-wide shadow-text px-1">PROJECT MODULES</h2>
+          <h2 className="text-xl font-ace text-white mb-4 tracking-wide shadow-text px-1">
+            PROJECT MODULES
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {projectModules.map((module) => (
               <ModuleCard
