@@ -20,9 +20,16 @@ const PROJECT_FOLDERS = [
     'audio/voices',
     'img/backgrounds',
     'img/characters',
+    'img/characters/idle',
+    'img/characters/talking',
+    'img/characters/special',
+    'img/characters/zoom',
     'img/profiles',
     'img/evidences',
     'img/effects',
+    'img/effects/backgrounds',
+    'img/effects/bubbles',
+    'img/effects/ui',
     'documents',
     'data'
 ];
@@ -198,9 +205,17 @@ Author: ${caseData.author}
 - img/ - All image assets
   - backgrounds/ - Scene backgrounds
   - characters/ - Character sprites
+    - idle/ - Character idle sprites
+    - talking/ - Character talking sprites
+    - special/ - Special character sprites
+    - zoom/ - Zoomed character eyes sprites: before the cross examination
+    - courtroom/ - Character sprites in the courtroom (the small ones, where the camera is zoomed out)
   - profiles/ - Character profile pictures
-  - evidence/ - Evidence images
+  - evidences/ - Evidence images
   - effects/ - Visual effects
+    - backgrounds/ - Animated backgrounds (dialogue in the courtroom, confetti, etc.)
+    - bubbles/ - Dialogue bubbles (Objection!, Hold it!, etc.)
+    - ui/ - User interface elements (Cross examination, witness testimony, etc.)
 - documents/ - Additional documentation
 - data/ - Game data files
 
